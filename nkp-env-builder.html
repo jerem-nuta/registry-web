@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NKP Deploy — Environment Builder</title>
+<style>
+  :root{
+    --bg:#0b0e14;
+    --panel:#111722;
+    --panel-2:#0e141d;
+    --line:#1f2937;
+    --line-bright:#2b3a52;
+    --ink:#e6edf3;
+    --ink-dim:#8b98a9;
+    --ink-faint:#5b6675;
+    --accent:#5ee3a1;       /* signal green — the "live / valid" colour */
+    --accent-dim:#2f7d59;
+    --amber:#f2b765;        /* change-me / needs attention */
+    --violet:#9d8cff;       /* section markers */
+    --mono:'JetBrains Mono','SF Mono',ui-monospace,Menlo,Consolas,monospace;
+    --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(900px 500px at 85% -10%, rgba(94,227,161,.06), transparent 60%),
+      radial-gradient(700px 400px at -10% 110%, rgba(157,140,255,.05), transparent 60%);
+    min-height:100vh;
+  }
+
+  /* ---------- layout ---------- */
+  .wrap{
+    max-width:1320px;margin:0 auto;padding:0 24px;
+    display:grid;grid-template-columns:1fr 480px;gap:0;
+    align-items:start;
+  }
+  @media(max-width:980px){.wrap{grid-template-columns:1fr;}}
+
+  /* ---------- masthead ---------- */
+  header.top{
+    grid-column:1 / -1;
+    padding:40px 0 28px;
+    border-bottom:1px solid var(--line);
+    display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:16px}
+  .glyph{
+    width:46px;height:46px;border:1px solid var(--line-bright);border-radius:10px;
+    display:grid;place-items:center;background:linear-gradient(160deg,#10202a,#0c1119);
+    position:relative;overflow:hidden;flex:0 0 auto;
+  }
+  .glyph::before{content:"";position:absolute;inset:0;
+    background:repeating-linear-gradient(0deg,transparent 0 5px,rgba(94,227,161,.07) 5px 6px);}
+  .glyph b{font-family:var(--mono);color:var(--accent);font-size:20px;font-weight:700;position:relative}
+  .brand h1{font-size:19px;font-weight:600;letter-spacing:-.01em}
+  .brand .sub{font-family:var(--mono);font-size:12px;color:var(--ink-faint);margin-top:2px}
+  .lede{max-width:440px;color:var(--ink-dim);font-size:14px}
+  .lede code{font-family:var(--mono);color:var(--accent);font-size:13px}
+
+  /* ---------- form column ---------- */
+  .form{padding:28px 36px 80px 0}
+  @media(max-width:980px){.form{padding-right:0}}
+
+  fieldset{border:0;margin:0 0 30px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin:0 0 14px;padding-bottom:9px;border-bottom:1px dashed var(--line)}
+  .sec-num{font-family:var(--mono);font-size:12px;color:var(--violet);font-weight:600;letter-spacing:.04em}
+  .sec-head h2{font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+  .sec-head .hint{margin-left:auto;font-size:12px;color:var(--ink-faint)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:13px 18px}
+  .grid .full{grid-column:1 / -1}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+
+  .field{display:flex;flex-direction:column;gap:5px}
+  label{font-size:12px;color:var(--ink-dim);font-weight:500;display:flex;align-items:center;gap:6px}
+  label .k{font-family:var(--mono);color:var(--ink-faint);font-size:11px}
+  input,select{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:7px;
+    color:var(--ink);font-family:var(--mono);font-size:13px;padding:9px 11px;
+    transition:border-color .15s, box-shadow .15s, background .15s;width:100%;
+  }
+  input::placeholder{color:var(--ink-faint)}
+  input:focus,select:focus{outline:none;border-color:var(--accent-dim);box-shadow:0 0 0 3px rgba(94,227,161,.10);background:#0c141b}
+  input.touch-amber{border-color:rgba(242,183,101,.45)}
+  select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b98a9' d='M3 4.5L6 8l3-3.5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+  .note{font-size:11px;color:var(--ink-faint)}
+  .note.warn{color:var(--amber)}
+
+  .seg{display:flex;border:1px solid var(--line);border-radius:7px;overflow:hidden;width:fit-content}
+  .seg button{background:var(--panel-2);color:var(--ink-dim);border:0;font-family:var(--mono);font-size:12px;padding:8px 16px;cursor:pointer;transition:.15s}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:#06231a;font-weight:600}
+
+  /* ---------- preview column (signature) ---------- */
+  .preview{
+    position:sticky;top:0;align-self:start;
+    height:100vh;display:flex;flex-direction:column;
+    border-left:1px solid var(--line);
+  }
+  .pv-head{
+    display:flex;align-items:center;gap:10px;padding:18px 20px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(94,227,161,.04),transparent);
+  }
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .pv-head .t{font-family:var(--mono);font-size:13px;font-weight:600}
+  .pv-head .path{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-left:auto}
+  pre.out{
+    flex:1;overflow:auto;margin:0;padding:18px 20px;
+    font-family:var(--mono);font-size:12px;line-height:1.65;color:var(--ink-dim);
+    background:
+      linear-gradient(var(--panel-2),var(--panel-2)) padding-box,
+      repeating-linear-gradient(180deg,transparent 0 27px,rgba(255,255,255,.012) 27px 28px);
+    white-space:pre;tab-size:2;
+  }
+  pre.out .c{color:var(--ink-faint)}              /* comments */
+  pre.out .k{color:var(--violet)}                 /* keys */
+  pre.out .v{color:var(--accent)}                 /* values */
+  pre.out .vw{color:var(--amber)}                 /* change-me values */
+  pre.out .h{color:var(--ink-faint);font-style:italic}/* header rule */
+  .pv-foot{display:flex;gap:10px;padding:14px 18px;border-top:1px solid var(--line);background:var(--panel)}
+  .btn{flex:1;font-family:var(--sans);font-weight:600;font-size:13px;padding:11px;border-radius:8px;border:1px solid var(--line-bright);background:var(--panel-2);color:var(--ink);cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:7px}
+  .btn:hover{border-color:var(--accent-dim);color:#fff}
+  .btn.primary{background:var(--accent);color:#06231a;border-color:var(--accent)}
+  .btn.primary:hover{background:#73ecb1;color:#06231a}
+  .btn svg{width:15px;height:15px}
+
+  .status{grid-column:1 / -1;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--ink-faint);padding:14px 0 0}
+  .status .pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:20px;padding:4px 11px}
+  .status .pill b{color:var(--amber);font-weight:600}
+  .status .ok b{color:var(--accent)}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#06231a;font-family:var(--mono);font-size:13px;font-weight:600;padding:11px 20px;border-radius:9px;opacity:0;pointer-events:none;transition:.25s;z-index:50}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  footer{grid-column:1/-1;border-top:1px solid var(--line);padding:22px 0 50px;color:var(--ink-faint);font-size:12px;font-family:var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <div class="glyph"><b>k</b></div>
+      <div>
+        <h1>NKP Deploy — Environment Builder</h1>
+        <div class="sub">nutanix kubernetes platform · 2.17 · air-gapped</div>
+      </div>
+    </div>
+    <p class="lede">Fill the fields, watch <code>nkp-deploy.env</code> assemble live, then download it to <code>/data/nkp-sources/</code> on Harbor — the bastion reads it over NFS.</p>
+  </header>
+
+  <!-- ============ FORM ============ -->
+  <main class="form">
+
+    <fieldset>
+      <div class="sec-head"><span class="sec-num">01</span><h2>Versions &amp; Tier</h2><span class="hint">what you're deploying</span></div>
+      <div class="grid">
+        <div class="field"><label>NKP version <span class="k">NKP_VERSION</span></label><input id="NKP_VERSION" value="2.17.0"></div>
+        <div class="field"><label>License tier <span class="k">NKP_LICENSE_TIER</span></label>
+          <select id="NKP_LICENSE_TIER"><option value="pro" selected>pro</option><option value="ultimate">ultimate</option><option value="starter">starter</option></select></div>
+        <div class="field"><label>Kubernetes version <span class="k">KUBERNETES_VERSION</span></label><input id="KUBERNETES_VERSION" value="1.31.4"></div>
+        <div class="field"><label>Air-gapped <span class="k">AIRGAPPED</span></label>
+          <div class="seg" id="seg-air"><button type="button" data-v="true" aria-pressed="true">true</button><button type="button" data-v="false" aria-pressed="false">false</button></div></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <div class="sec-head"><span class="sec-num">02</span><h2>Harbor Registry</h2><span class="hint">the source of truth</span></div>
+      <div class="grid">
+        <div class="field"><label>Registry host (FQDN) <span class="k">REGISTRY_HOST</span></label><input id="REGISTRY_HOST" value="harbor-prod.emeagso2026.local"></div>
+        <div class="field"><label>Registry IP <span class="k">REGISTRY_IP</span></label><input id="REGISTRY_IP" value="10.68.24.103"></div>
+        <div class="field"><label>Mirror project <span class="k">REGISTRY_MIRROR_PROJECT</span></label><input id="REGISTRY_MIRROR_PROJECT" value="nkp-2-17-0"></div>
+        <div class="field"><label>Admin user <span class="k">REGISTRY_USERNAME</span></label><input id="REGISTRY_USERNAME" value="admin"></div>
+        <div class="field"><label>Admin password <span class="k">REGISTRY_PASSWORD</span></label><input id="REGISTRY_PASSWORD" value="Harbor12345"></div>
+        <div class="field"><label>Docker Hub cache project <span class="k">DOCKERHUB_CACHE_PROJECT</span></label><input id="DOCKERHUB_CACHE_PROJECT" value="dockerhub"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <div class="sec-head"><span class="sec-num">03</span><h2>NFS Source Mount</h2><span class="hint">bastion ↔ harbor</span></div>
+      <div class="grid">
+        <div class="field"><label>Mount point (bastion) <span class="k">NKP_SOURCES_MOUNT</span></label><input id="NKP_SOURCES_MOUNT" value="/mnt/nkp-sources"></div>
+        <div class="field"><label>NFS server IP <span class="k">NFS_SERVER_IP</span></label><input id="NFS_SERVER_IP" value="10.68.24.103"></div>
+        <div class="field full"><label>Export path <span class="k">NFS_EXPORT_PATH</span></label><input id="NFS_EXPORT_PATH" value="/data/nkp-sources"></div>
+      </div>
+      <p class="note" style="margin-top:8px">Bundle paths (CLI, konvoy, kommander, catalog) are derived from the mount point + version automatically.</p>
+    </fieldset>
+
+    <fieldset>
+      <div class="sec-head"><span class="sec-num">04</span><h2>Prism Central</h2><span class="hint">cluster target</span></div>
+      <div class="grid">
+        <div class="field"><label>PC endpoint <span class="k">NUTANIX_ENDPOINT</span></label><input id="NUTANIX_ENDPOINT" value="pc.emeagso2026.local"></div>
+        <div class="field"><label>Port <span class="k">NUTANIX_PORT</span></label><input id="NUTANIX_PORT" value="9440"></div>
+        <div class="field"><label>PC user <span class="k">NUTANIX_USER</span></label><input id="NUTANIX_USER" value="nkp-svc@emeagso2026.local"></div>
+        <div class="field"><label>PC password <span class="k">NUTANIX_PASSWORD</span></label><input id="NUTANIX_PASSWORD" value="CHANGE_ME"></div>
+        <div class="field"><label>Prism Element cluster <span class="k">PRISM_ELEMENT_CLUSTER</span></label><input id="PRISM_ELEMENT_CLUSTER" value="PE-CLUSTER-01"></div>
+        <div class="field"><label>Subnet <span class="k">SUBNET_NAME</span></label><input id="SUBNET_NAME" value="nkp-net"></div>
+        <div class="field"><label>Storage container <span class="k">NUTANIX_STORAGE_CONTAINER</span></label><input id="NUTANIX_STORAGE_CONTAINER" value="SelfServiceContainer"></div>
+        <div class="field"><label>Node image name <span class="k">NODE_IMAGE_NAME</span></label><input id="NODE_IMAGE_NAME" value="nkp-rocky-10-2.17.0"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <div class="sec-head"><span class="sec-num">05</span><h2>Cluster Topology</h2><span class="hint">name &amp; addressing</span></div>
+      <div class="grid">
+        <div class="field"><label>Cluster name <span class="k">CLUSTER_NAME</span></label><input id="CLUSTER_NAME" value="nkp-mgmt"></div>
+        <div class="field"><label>Control-plane VIP <span class="k">CONTROL_PLANE_ENDPOINT_IP</span></label><input id="CONTROL_PLANE_ENDPOINT_IP" value="10.68.24.107"></div>
+        <div class="field"><label>LB IP range (MetalLB) <span class="k">LB_IP_RANGE</span></label><input id="LB_IP_RANGE" value="10.68.24.110-10.68.24.114"></div>
+        <div class="field"><label>Cluster hostname (dashboard) <span class="k">CLUSTER_HOSTNAME</span></label><input id="CLUSTER_HOSTNAME" value="nkp.emeagso2026.local"></div>
+        <div class="field"><label>Control-plane replicas <span class="k">CONTROL_PLANE_REPLICAS</span></label><input id="CONTROL_PLANE_REPLICAS" type="number" value="3"></div>
+        <div class="field"><label>Worker replicas <span class="k">WORKER_REPLICAS</span></label><input id="WORKER_REPLICAS" type="number" value="4"></div>
+        <div class="field"><label>Pod CIDR <span class="k">POD_CIDR</span></label><input id="POD_CIDR" value="192.168.0.0/16"></div>
+        <div class="field"><label>Service CIDR <span class="k">SERVICE_CIDR</span></label><input id="SERVICE_CIDR" value="10.96.0.0/12"></div>
+        <div class="field full"><label>SSH public key file <span class="k">SSH_PUBLIC_KEY_FILE</span></label><input id="SSH_PUBLIC_KEY_FILE" value="/home/nutanix/.ssh/id_ed25519.pub"></div>
+      </div>
+      <div class="sec-head" style="margin-top:22px"><span class="sec-num">05b</span><h2>Node Sizing</h2><span class="hint">per-node resources</span></div>
+      <div class="grid">
+        <div class="field"><label>Control-plane vCPU <span class="k">CONTROL_PLANE_VCPUS</span></label><input id="CONTROL_PLANE_VCPUS" type="number" value="4"></div>
+        <div class="field"><label>Control-plane memory (GiB) <span class="k">CONTROL_PLANE_MEMORY_GIB</span></label><input id="CONTROL_PLANE_MEMORY_GIB" type="number" value="16"></div>
+        <div class="field"><label>Control-plane disk (GiB) <span class="k">CONTROL_PLANE_DISK_GIB</span></label><input id="CONTROL_PLANE_DISK_GIB" type="number" value="80"></div>
+        <div class="field"><label>Worker vCPU <span class="k">WORKER_VCPUS</span></label><input id="WORKER_VCPUS" type="number" value="8"></div>
+        <div class="field"><label>Worker memory (GiB) <span class="k">WORKER_MEMORY_GIB</span></label><input id="WORKER_MEMORY_GIB" type="number" value="32"></div>
+        <div class="field"><label>Worker disk (GiB) <span class="k">WORKER_DISK_GIB</span></label><input id="WORKER_DISK_GIB" type="number" value="80"></div>
+      </div>
+    </fieldset>
+
+    <div class="status" id="status">
+      <span class="pill" id="pill-changeme"><span>unset / <b>CHANGE_ME</b> fields:</span> <b id="cm-count">0</b></span>
+      <span class="pill ok"><span>vars:</span> <b id="var-count">0</b></span>
+    </div>
+
+    <footer>// generated for harbor:/data/nkp-sources/nkp-deploy.env &nbsp;·&nbsp; source on bastion: <span style="color:var(--accent)">set -a; source /mnt/nkp-sources/nkp-deploy.env; set +a</span></footer>
+  </main>
+
+  <!-- ============ LIVE PREVIEW ============ -->
+  <aside class="preview">
+    <div class="pv-head">
+      <span class="dot"></span>
+      <span class="t">nkp-deploy.env</span>
+      <span class="path">harbor:/data/nkp-sources/</span>
+    </div>
+    <pre class="out" id="out"></pre>
+    <div class="pv-foot">
+      <button class="btn primary" id="dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg>Download .env</button>
+      <button class="btn" id="cp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button>
+    </div>
+  </aside>
+
+</div>
+<div class="toast" id="toast">copied to clipboard</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// air-gapped segmented control
+let airgapped = "true";
+document.querySelectorAll('#seg-air button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#seg-air button').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true'); airgapped=b.dataset.v; render();
+  });
+});
+
+// every plain input/select that has an id maps 1:1 to a var
+const SIMPLE = ['NKP_VERSION','NKP_LICENSE_TIER','KUBERNETES_VERSION',
+  'REGISTRY_HOST','REGISTRY_IP','REGISTRY_MIRROR_PROJECT','REGISTRY_USERNAME','REGISTRY_PASSWORD','DOCKERHUB_CACHE_PROJECT',
+  'NKP_SOURCES_MOUNT','NFS_SERVER_IP','NFS_EXPORT_PATH',
+  'NUTANIX_ENDPOINT','NUTANIX_PORT','NUTANIX_USER','NUTANIX_PASSWORD','PRISM_ELEMENT_CLUSTER','SUBNET_NAME','NUTANIX_STORAGE_CONTAINER','NODE_IMAGE_NAME',
+  'CLUSTER_NAME','CONTROL_PLANE_ENDPOINT_IP','LB_IP_RANGE','CLUSTER_HOSTNAME','CONTROL_PLANE_REPLICAS','WORKER_REPLICAS','POD_CIDR','SERVICE_CIDR','SSH_PUBLIC_KEY_FILE',
+  'CONTROL_PLANE_VCPUS','CONTROL_PLANE_MEMORY_GIB','CONTROL_PLANE_DISK_GIB','WORKER_VCPUS','WORKER_MEMORY_GIB','WORKER_DISK_GIB'];
+
+function val(id){return ($(id)?.value ?? '').trim();}
+
+// build the env model (with derived values)
+function model(){
+  const g = {};
+  SIMPLE.forEach(k=>g[k]=val(k));
+  g.AIRGAPPED = airgapped;
+  const M = g.NKP_SOURCES_MOUNT || '/mnt/nkp-sources';
+  const V = g.NKP_VERSION || '2.17.0';
+  const host = g.REGISTRY_HOST || 'harbor-prod.local';
+  // derived
+  g.REGISTRY_URL          = `https://${host}`;
+  g.REGISTRY_MIRROR_URL   = `https://${host}/${g.REGISTRY_MIRROR_PROJECT}`;
+  g.DOCKERHUB_CACHE_URL   = `https://${host}/${g.DOCKERHUB_CACHE_PROJECT}`;
+  g.REGISTRY_CACERT       = `${M}/certs/registry-ca-chain.crt`;
+  g.NKP_CLI_BUNDLE        = `${M}/nkp_v${V}_linux_amd64.tar.gz`;
+  g.KONVOY_IMAGE_BUNDLE   = `${M}/konvoy-image-bundle-v${V}.tar`;
+  g.KOMMANDER_IMAGE_BUNDLE= `${M}/kommander-image-bundle-v${V}.tar`;
+  g.CATALOG_IMAGE_BUNDLE  = `${M}/nkp-catalog-applications-image-bundle-v${V}.tar`;
+  g.PC_CA_CERT            = `${M}/certs/pc-ca.crt`;
+  g.INGRESS_CA            = `${M}/certs/issuingca.crt`;
+  g.INGRESS_CERT          = `${M}/certs/nkp-ingress.crt`;
+  g.INGRESS_KEY           = `${M}/certs/nkp-ingress.key`;
+  g.NUTANIX_INSECURE      = 'false';
+  return g;
+}
+
+// ordered layout of the env file: [comment|blank|key]
+function layout(g){
+  const S = t=>({t:'h',v:t});
+  const C = t=>({t:'c',v:t});
+  const B = ()=>({t:'b'});
+  const K = k=>({t:'k',k, v:g[k]});
+  return [
+    S('NKP 2.17 '+ (g.NKP_LICENSE_TIER||'') +' — deployment environment'),
+    C('lives on harbor: /data/nkp-sources/nkp-deploy.env'),
+    C('bastion: set -a; source /mnt/nkp-sources/nkp-deploy.env; set +a'),
+    B(),
+    C('— versions —'),
+    K('NKP_VERSION'),K('NKP_LICENSE_TIER'),K('KUBERNETES_VERSION'),K('AIRGAPPED'),
+    B(),C('— nfs source mount —'),
+    K('NKP_SOURCES_MOUNT'),K('NFS_SERVER_IP'),K('NFS_EXPORT_PATH'),
+    B(),C('— harbor registry —'),
+    K('REGISTRY_HOST'),K('REGISTRY_IP'),K('REGISTRY_URL'),
+    K('REGISTRY_MIRROR_PROJECT'),K('REGISTRY_MIRROR_URL'),
+    K('REGISTRY_USERNAME'),K('REGISTRY_PASSWORD'),K('REGISTRY_CACERT'),
+    B(),C('— docker hub proxy cache —'),
+    K('DOCKERHUB_CACHE_PROJECT'),K('DOCKERHUB_CACHE_URL'),
+    B(),C('— nkp source bundles (read from the nfs mount) —'),
+    K('NKP_CLI_BUNDLE'),K('KONVOY_IMAGE_BUNDLE'),K('KOMMANDER_IMAGE_BUNDLE'),K('CATALOG_IMAGE_BUNDLE'),
+    B(),C('— prism central —'),
+    K('NUTANIX_ENDPOINT'),K('NUTANIX_PORT'),K('NUTANIX_USER'),K('NUTANIX_PASSWORD'),
+    K('NUTANIX_INSECURE'),K('PC_CA_CERT'),K('PRISM_ELEMENT_CLUSTER'),K('SUBNET_NAME'),K('NUTANIX_STORAGE_CONTAINER'),
+    B(),C('— cluster topology / addressing —'),
+    K('CLUSTER_NAME'),K('CONTROL_PLANE_ENDPOINT_IP'),K('LB_IP_RANGE'),
+    K('CONTROL_PLANE_REPLICAS'),K('WORKER_REPLICAS'),K('NODE_IMAGE_NAME'),K('POD_CIDR'),K('SERVICE_CIDR'),
+    B(),C('— node sizing —'),
+    K('CONTROL_PLANE_VCPUS'),K('CONTROL_PLANE_MEMORY_GIB'),K('CONTROL_PLANE_DISK_GIB'),
+    K('WORKER_VCPUS'),K('WORKER_MEMORY_GIB'),K('WORKER_DISK_GIB'),
+    B(),C('— kommander dashboard / ingress cert —'),
+    K('CLUSTER_HOSTNAME'),K('INGRESS_CA'),K('INGRESS_CERT'),K('INGRESS_KEY'),
+    B(),C('— ssh —'),K('SSH_PUBLIC_KEY_FILE'),
+  ];
+}
+
+const esc = s => (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const isChange = v => /CHANGE_ME/i.test(v) || v==='';
+
+// produce plaintext (for download/copy) and html (for preview)
+function build(){
+  const g=model(); const rows=layout(g);
+  let txt='', html='', vars=0, changes=0;
+  // top rule
+  const rule='#'.repeat(60);
+  rows.forEach(r=>{
+    if(r.t==='h'){ txt+=`${rule}\n# ${r.v}\n${rule}\n`; html+=`<span class="h">${rule}\n# ${esc(r.v)}\n${rule}</span>\n`; }
+    else if(r.t==='c'){ txt+=`# ${r.v}\n`; html+=`<span class="c"># ${esc(r.v)}</span>\n`; }
+    else if(r.t==='b'){ txt+='\n'; html+='\n'; }
+    else if(r.t==='k'){
+      vars++;
+      const v=g[r.k]??''; const warn=isChange(v); if(warn)changes++;
+      txt += `${r.k}="${v}"\n`;
+      html += `<span class="k">${r.k}</span>=<span class="${warn?'vw':'v'}">"${esc(v)||'…'}"</span>\n`;
+    }
+  });
+  return {txt, html, vars, changes};
+}
+
+function render(){
+  const {html,vars,changes}=build();
+  $('out').innerHTML=html;
+  $('var-count').textContent=vars;
+  $('cm-count').textContent=changes;
+  const pill=$('pill-changeme');
+  pill.style.opacity = changes? '1':'.5';
+  // amber-flag the CHANGE_ME inputs
+  ['NUTANIX_PASSWORD'].forEach(id=>{
+    const el=$(id); if(!el)return;
+    el.classList.toggle('touch-amber', isChange(el.value.trim()));
+  });
+}
+
+// wire all inputs
+[...SIMPLE].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input',render); });
+
+// download
+$('dl').addEventListener('click',()=>{
+  const {txt}=build();
+  const blob=new Blob([txt],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='nkp-deploy.env'; a.click();
+  URL.revokeObjectURL(a.href);
+  toast('saved nkp-deploy.env');
+});
+// copy
+$('cp').addEventListener('click',async()=>{
+  const {txt}=build();
+  try{ await navigator.clipboard.writeText(txt); toast('copied to clipboard'); }
+  catch{ toast('copy failed — select manually'); }
+});
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+
+render();
+</script>
+</body>
+</html>

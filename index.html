@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>emeagso2026 · NKP Lab Portal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+  :root{
+    --bg:#0b0e14;--panel:#111722;--panel-2:#0e141d;--line:#1f2937;--line-bright:#2b3a52;
+    --ink:#e6edf3;--ink-dim:#8b98a9;--ink-faint:#5b6675;
+    --accent:#5ee3a1;--accent-dim:#2f7d59;--violet:#9d8cff;--amber:#f2b765;--blue:#6cb6ff;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+    --sans:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(1100px 600px at 80% -15%, rgba(94,227,161,.07), transparent 60%),
+      radial-gradient(800px 500px at -10% 120%, rgba(157,140,255,.06), transparent 55%);
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+
+  /* hero */
+  header{padding:64px 0 36px;border-bottom:1px solid var(--line);position:relative}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:18px;display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:26px;height:1px;background:var(--accent)}
+  h1{font-size:clamp(34px,5vw,58px);font-weight:700;letter-spacing:-.02em;line-height:1.02}
+  h1 .dim{color:var(--ink-faint)}
+  .tagline{margin-top:16px;color:var(--ink-dim);font-size:16px;max-width:560px}
+  .meta{margin-top:26px;display:flex;gap:10px;flex-wrap:wrap}
+  .chip{font-family:var(--mono);font-size:12px;color:var(--ink-dim);border:1px solid var(--line);border-radius:20px;padding:6px 13px;display:inline-flex;align-items:center;gap:7px}
+  .chip .d{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+  .chip.v .d{background:var(--violet);box-shadow:0 0 8px var(--violet)}
+  .chip.a .d{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+
+  /* section heads */
+  .group{padding:42px 0 8px}
+  .ghead{display:flex;align-items:baseline;gap:14px;margin-bottom:20px}
+  .ghead .n{font-family:var(--mono);font-size:13px;color:var(--violet);font-weight:600}
+  .ghead h2{font-size:14px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+  .ghead .line{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+  /* card grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+  a.card{
+    display:flex;flex-direction:column;gap:0;text-decoration:none;color:inherit;
+    background:linear-gradient(165deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);border-radius:13px;padding:20px;position:relative;overflow:hidden;
+    transition:transform .18s cubic-bezier(.2,.7,.3,1),border-color .18s,box-shadow .18s;
+  }
+  a.card::after{content:"";position:absolute;inset:0;border-radius:13px;pointer-events:none;
+    background:radial-gradient(380px 120px at var(--mx,50%) -10%, rgba(94,227,161,.10), transparent 70%);opacity:0;transition:opacity .2s}
+  a.card:hover{transform:translateY(-3px);border-color:var(--line-bright);box-shadow:0 12px 30px -16px rgba(0,0,0,.7)}
+  a.card:hover::after{opacity:1}
+  a.card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .card .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .ico{width:42px;height:42px;border-radius:10px;display:grid;place-items:center;border:1px solid var(--line-bright);background:#0c131b;flex:0 0 auto}
+  .ico svg{width:21px;height:21px;stroke-width:1.8}
+  .tag{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);border:1px solid var(--line);border-radius:5px;padding:3px 7px}
+  .tag.local{color:var(--accent);border-color:var(--accent-dim)}
+  .tag.ext{color:var(--blue);border-color:#2b4a6b}
+  .card h3{font-size:16px;font-weight:600;margin:16px 0 5px;letter-spacing:-.01em}
+  .card p{font-size:13px;color:var(--ink-dim);line-height:1.5}
+  .card .url{margin-top:13px;font-family:var(--mono);font-size:11.5px;color:var(--ink-faint);display:flex;align-items:center;gap:7px;word-break:break-all}
+  .card .url .arrow{color:var(--accent);transition:transform .18s}
+  a.card:hover .url .arrow{transform:translateX(3px)}
+
+  /* accent tints per icon */
+  .ico.green{color:var(--accent)} .ico.violet{color:var(--violet)}
+  .ico.amber{color:var(--amber)} .ico.blue{color:var(--blue)} .ico.ink{color:var(--ink)}
+
+  /* edit-note for hosts */
+  .editbar{margin:36px 0 0;border:1px dashed var(--line);border-radius:11px;background:rgba(242,183,101,.05);padding:16px 18px;display:flex;gap:14px;align-items:flex-start}
+  .editbar svg{width:18px;height:18px;color:var(--amber);flex:0 0 auto;margin-top:1px}
+  .editbar p{font-size:13px;color:var(--ink-dim)}
+  .editbar code{font-family:var(--mono);color:var(--amber);font-size:12px}
+
+  footer{margin-top:54px;border-top:1px solid var(--line);padding:26px 0 60px;color:var(--ink-faint);font-family:var(--mono);font-size:12px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">emeagso2026 · air-gapped lab</div>
+    <h1>NKP Lab <span class="dim">Control</span></h1>
+    <p class="tagline">One place to reach every service and reference for the Nutanix Kubernetes Platform 2.17 deployment — registry, file store, the env builder, and the docs that matter.</p>
+    <div class="meta">
+      <span class="chip"><span class="d"></span>harbor-prod · 10.68.24.103</span>
+      <span class="chip v"><span class="d"></span>bastion · 10.68.24.102</span>
+      <span class="chip a"><span class="d"></span>NKP 2.17 · pro · air-gapped</span>
+    </div>
+  </header>
+
+  <section class="group" style="padding-top:40px">
+    <div class="ghead"><span class="n">00</span><h2>Architecture</h2><span class="line"></span></div>
+    <div style="background:linear-gradient(165deg,#111722,#0e141d);border:1px solid var(--line);border-radius:14px;padding:24px 20px">
+      <svg viewBox="0 0 680 600" width="100%" style="max-width:760px;display:block;margin:0 auto" role="img" aria-label="NKP lab web access map">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M2 1L8 5L2 9" fill="none" stroke="#5b6675" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </marker>
+          <style>
+            .bx{fill:#111722;stroke:#1f2937;stroke-width:1}
+            .bx-h{fill:#0e141d;stroke:#2b3a52;stroke-width:1}
+            .bx-g{fill:#0c131b;stroke:#1f2937;stroke-width:1}
+            .ac-t{fill:#5ee3a1;stroke:#2f7d59}
+            .ac-v{fill:#9d8cff;stroke:#4b3f8f}
+            .ac-b{fill:#6cb6ff;stroke:#2b4a6b}
+            .ac-a{fill:#f2b765;stroke:#7a5a1f}
+            .fz{fill:rgba(94,227,161,.08)}
+            .fzv{fill:rgba(157,140,255,.08)}
+            .t{font-family:'Inter',sans-serif;font-size:14px;font-weight:600;fill:#e6edf3}
+            .ts{font-family:'JetBrains Mono',monospace;font-size:11px;fill:#8b98a9}
+            .tac{fill:#5ee3a1}.tacv{fill:#9d8cff}.tacb{fill:#6cb6ff}.taca{fill:#f2b765}
+            .ln{stroke:#2b3a52;stroke-width:1;fill:none}
+          </style>
+        </defs>
+
+        <rect class="bx-g" x="270" y="30" width="140" height="46" rx="9"/>
+        <text class="t" x="340" y="50" text-anchor="middle">Operator</text>
+        <text class="ts" x="340" y="66" text-anchor="middle">single entry</text>
+
+        <rect x="250" y="106" width="180" height="46" rx="9" fill="rgba(94,227,161,.10)" stroke="#2f7d59"/>
+        <text class="t tac" x="340" y="126" text-anchor="middle">Lab portal</text>
+        <text class="ts" x="340" y="142" text-anchor="middle">index.html</text>
+        <line class="ln" x1="340" y1="76" x2="340" y2="104" marker-end="url(#arr)"/>
+
+        <rect class="fz" x="40" y="188" width="384" height="256" rx="20"/>
+        <rect x="40" y="188" width="384" height="256" rx="20" fill="none" stroke="#2f7d59" stroke-width="1"/>
+        <text class="t tac" x="62" y="214">Harbor host</text>
+        <text class="ts" x="62" y="232">harbor-prod · 10.68.24.103</text>
+
+        <rect class="bx" x="62" y="250" width="166" height="52" rx="10"/>
+        <text class="t" x="145" y="270" text-anchor="middle">Registry UI</text>
+        <text class="ts tac" x="145" y="288" text-anchor="middle">:443 · mirror+cache</text>
+
+        <rect class="bx" x="244" y="250" width="160" height="52" rx="10"/>
+        <text class="t" x="324" y="270" text-anchor="middle">Upload portal</text>
+        <text class="ts tac" x="324" y="288" text-anchor="middle">:8444 · filebrowser</text>
+
+        <rect class="bx" x="62" y="316" width="166" height="52" rx="10"/>
+        <text class="t" x="145" y="336" text-anchor="middle">File server</text>
+        <text class="ts tac" x="145" y="354" text-anchor="middle">:8443 · sources</text>
+
+        <rect class="bx" x="244" y="316" width="160" height="52" rx="10"/>
+        <text class="t" x="324" y="336" text-anchor="middle">Env builder</text>
+        <text class="ts tac" x="324" y="354" text-anchor="middle">static form</text>
+
+        <rect x="62" y="384" width="342" height="46" rx="10" fill="rgba(242,183,101,.10)" stroke="#7a5a1f"/>
+        <text class="t taca" x="233" y="402" text-anchor="middle">NFS export</text>
+        <text class="ts taca" x="233" y="418" text-anchor="middle">:2049 · /data/nkp-sources</text>
+
+        <line class="ln" x1="300" y1="152" x2="224" y2="186" marker-end="url(#arr)"/>
+
+        <rect class="fzv" x="452" y="188" width="188" height="122" rx="20"/>
+        <rect x="452" y="188" width="188" height="122" rx="20" fill="none" stroke="#4b3f8f" stroke-width="1"/>
+        <text class="t tacv" x="474" y="214">Bastion</text>
+        <text class="ts" x="474" y="232">10.68.24.102</text>
+        <rect class="bx-h" x="474" y="250" width="146" height="46" rx="10"/>
+        <text class="t" x="547" y="270" text-anchor="middle">nkp CLI</text>
+        <text class="ts tacv" x="547" y="286" text-anchor="middle">/mnt/nkp-sources</text>
+        <line class="ln" x1="404" y1="406" x2="547" y2="298" marker-end="url(#arr)"/>
+
+        <rect class="bx" x="452" y="346" width="188" height="52" rx="10"/>
+        <text class="t" x="546" y="366" text-anchor="middle">Prism Central</text>
+        <text class="ts tacb" x="546" y="384" text-anchor="middle">:9440 · AHV</text>
+        <line class="ln" x1="430" y1="129" x2="546" y2="344" marker-end="url(#arr)"/>
+
+        <rect class="bx-g" x="40" y="476" width="600" height="88" rx="16"/>
+        <text class="t" x="62" y="500">External references</text>
+        <text class="ts" x="62" y="518">open in new tabs</text>
+        <rect class="bx-h" x="204" y="510" width="128" height="38" rx="8"/>
+        <text class="ts" x="268" y="533" text-anchor="middle">Support portal</text>
+        <rect class="bx-h" x="346" y="510" width="116" height="38" rx="8"/>
+        <text class="ts" x="404" y="533" text-anchor="middle">nutanix.dev</text>
+        <rect class="bx-h" x="476" y="510" width="144" height="38" rx="8"/>
+        <text class="ts" x="548" y="533" text-anchor="middle">NKP / CAPX docs</text>
+        <line class="ln" x1="320" y1="152" x2="300" y2="474" marker-end="url(#arr)"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- LOCAL SERVICES -->
+  <section class="group">
+    <div class="ghead"><span class="n">01</span><h2>Lab Services</h2><span class="line"></span></div>
+    <div class="grid">
+
+      <a class="card" href="https://harbor-prod.emeagso2026.local" data-card>
+        <div class="row">
+          <span class="ico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg></span>
+          <span class="tag local">local · 443</span>
+        </div>
+        <h3>Harbor Registry</h3>
+        <p>Container registry UI — projects, the NKP mirror, Docker Hub proxy cache, and image scanning.</p>
+        <div class="url">harbor-prod.emeagso2026.local <span class="arrow">→</span></div>
+      </a>
+
+      <a class="card" href="https://harbor-prod.emeagso2026.local:8444" data-card>
+        <div class="row">
+          <span class="ico violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4h6l2 3h8v12H4z"/><path d="M12 11v5M9.5 13.5L12 11l2.5 2.5"/></svg></span>
+          <span class="tag local">local · 8444</span>
+        </div>
+        <h3>Upload Portal</h3>
+        <p>Drag-and-drop NKP bundles and the deploy env into <code style="font-family:var(--mono);font-size:12px;color:var(--ink-dim)">/data/nkp-sources</code>.</p>
+        <div class="url">…:8444 <span class="arrow">→</span></div>
+      </a>
+
+      <a class="card" href="https://harbor-prod.emeagso2026.local:8443" data-card>
+        <div class="row">
+          <span class="ico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v14H4z"/><path d="M4 9h16M8 13h8M8 16h5"/></svg></span>
+          <span class="tag local">local · 8443</span>
+        </div>
+        <h3>Source File Server</h3>
+        <p>Browse and curl the staged NKP source bundles (HTTPS, basic auth). Mounted on the bastion via NFS.</p>
+        <div class="url">…:8443 <span class="arrow">→</span></div>
+      </a>
+
+      <a class="card" href="./nkp-env-builder.html" data-card>
+        <div class="row">
+          <span class="ico amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="15" r="3"/><path d="M18 12.5V15l1.6 1"/></svg></span>
+          <span class="tag local">tool</span>
+        </div>
+        <h3>Env Builder</h3>
+        <p>Generate <code style="font-family:var(--mono);font-size:12px;color:var(--ink-dim)">nkp-deploy.env</code> from a form — versions, registry, Prism Central, topology, node sizing.</p>
+        <div class="url">nkp-env-builder.html <span class="arrow">→</span></div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- NUTANIX -->
+  <section class="group">
+    <div class="ghead"><span class="n">02</span><h2>Nutanix</h2><span class="line"></span></div>
+    <div class="grid">
+
+      <a class="card" href="https://pc.emeagso2026.local:9440" data-card>
+        <div class="row">
+          <span class="ico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3l9 5v8l-9 5-9-5V8z"/><path d="M12 12l9-5M12 12v9M12 12L3 7"/></svg></span>
+          <span class="tag local">local · 9440</span>
+        </div>
+        <h3>Prism Central</h3>
+        <p>Manage AHV VMs, images, subnets and the NKP cluster registered via Konnector.</p>
+        <div class="url">pc.emeagso2026.local:9440 <span class="arrow">→</span></div>
+      </a>
+
+      <a class="card" href="https://portal.nutanix.com" target="_blank" rel="noopener" data-card>
+        <div class="row">
+          <span class="ico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/></svg></span>
+          <span class="tag ext">external</span>
+        </div>
+        <h3>Nutanix Support Portal</h3>
+        <p>Download NKP releases, the air-gapped bundle, NIB, and check the compatibility matrix.</p>
+        <div class="url">portal.nutanix.com <span class="arrow">→</span></div>
+      </a>
+
+      <a class="card" href="https://www.nutanix.dev" target="_blank" rel="noopener" data-card>
+        <div class="row">
+          <span class="ico violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 6l-2 12"/></svg></span>
+          <span class="tag ext">external</span>
+        </div>
+        <h3>nutanix.dev</h3>
+        <p>Developer docs, CAPX, API references and engineering articles (NKP ingress, Flow, automation).</p>
+        <div class="url">nutanix.dev <span class="arrow">→</span></div>
+      </a>
+
+    </div>
+  </section>
+
+  <!-- DOCS & REFERENCE -->
+  <section class="group">
+    <div class="ghead"><span class="n">03</span><h2>Docs &amp; Reference</h2><span class="line"></span></div>
+    <div class="grid">
+
+      <a class="card" href="https://portal.nutanix.com/page/documents/list?type=software&filterKey=software&filterVal=Nutanix%20Kubernetes%20Platform" target="_blank" rel="noopener" data-card>
+        <div class="row">
+          <span class="ico ink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 4h10l4 4v12H5z"/><path d="M15 4v4h4M8 13h8M8 16h6"/></svg></span>
+          <span class="tag ext">docs</span>
+        </div>
+        <h3>NKP 2.17 Documentation</h3>
+        <p>Install guides, release notes, supported Kubernetes versions, FIPS, and storage providers.</p>
+        <div class="url">portal.nutanix.com · NKP docs <span class="arrow">→</span></div>
+      </a>
+
+      <a class="card" href="https://opendocs.nutanix.com/capx/latest/" target="_blank" rel="noopener" data-card>
+        <div class="row">
+          <span class="ico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3v18M5 7l7-4 7 4M5 17l7 4 7-4"/></svg></span>
+          <span class="tag ext">docs</span>
+        </div>
+        <h3>CAPX (Cluster API · Nutanix)</h3>
+        <p>Credential management, machine templates, and the provider that drives cluster lifecycle.</p>
+        <div class="url">opendocs.nutanix.com/capx <span class="arrow">→</span></div>
+      </a>
+
+      <a class="card" href="https://goharbor.io/docs/" target="_blank" rel="noopener" data-card>
+        <div class="row">
+          <span class="ico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg></span>
+          <span class="tag ext">docs</span>
+        </div>
+        <h3>Harbor Docs</h3>
+        <p>Proxy cache projects, registry endpoints, RBAC, and the offline installer reference.</p>
+        <div class="url">goharbor.io/docs <span class="arrow">→</span></div>
+      </a>
+
+      <a class="card" href="https://kubernetes.io/docs/reference/kubectl/" target="_blank" rel="noopener" data-card>
+        <div class="row">
+          <span class="ico violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l8.5 4v8L12 22 3.5 14V6z"/><path d="M12 8v8M8 10l8 4M16 10l-8 4"/></svg></span>
+          <span class="tag ext">docs</span>
+        </div>
+        <h3>kubectl Reference</h3>
+        <p>Command reference for managing the cluster from the bastion once NKP is up.</p>
+        <div class="url">kubernetes.io · kubectl <span class="arrow">→</span></div>
+      </a>
+
+    </div>
+  </section>
+
+  <div class="editbar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+    <p>Hostnames and IPs above are the lab defaults (<code>emeagso2026.local</code>, <code>10.68.24.0/27</code>). Edit the <code>href</code> values in this file to match your environment — it's a static page, no backend.</p>
+  </div>
+
+  <footer>
+    <span>// emeagso2026 · NKP 2.17 lab portal</span>
+    <span>harbor:/data/nkp-sources/index.html</span>
+  </footer>
+
+</div>
+
+<script>
+  // subtle pointer-tracked glow on cards
+  document.querySelectorAll('[data-card]').forEach(c=>{
+    c.addEventListener('pointermove',e=>{
+      const r=c.getBoundingClientRect();
+      c.style.setProperty('--mx',((e.clientX-r.left)/r.width*100)+'%');
+    });
+  });
+</script>
+</body>
+</html>
