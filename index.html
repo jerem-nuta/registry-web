@@ -140,8 +140,8 @@
         <text class="ts tac" x="145" y="288" text-anchor="middle">:443 · mirror+cache</text>
 
         <rect class="bx" x="244" y="250" width="160" height="52" rx="10"/>
-        <text class="t" x="324" y="270" text-anchor="middle">Upload portal</text>
-        <text class="ts tac" x="324" y="288" text-anchor="middle">:8444 · filebrowser</text>
+        <text class="t" x="324" y="270" text-anchor="middle">Link portal</text>
+        <text class="ts tac" x="324" y="288" text-anchor="middle">downloader</text>
 
         <rect class="bx" x="62" y="316" width="166" height="52" rx="10"/>
         <text class="t" x="145" y="336" text-anchor="middle">File server</text>
@@ -200,16 +200,6 @@
         <div class="url">harbor-prod.emeagso2026.local <span class="arrow">→</span></div>
       </a>
 
-      <a class="card" href="https://harbor-prod.emeagso2026.local:8444" data-card>
-        <div class="row">
-          <span class="ico violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4h6l2 3h8v12H4z"/><path d="M12 11v5M9.5 13.5L12 11l2.5 2.5"/></svg></span>
-          <span class="tag local">local · 8444</span>
-        </div>
-        <h3>Upload Portal</h3>
-        <p>Drag-and-drop NKP bundles and the deploy env into <code style="font-family:var(--mono);font-size:12px;color:var(--ink-dim)">/data/nkp-sources</code>.</p>
-        <div class="url">…:8444 <span class="arrow">→</span></div>
-      </a>
-
       <a class="card" href="https://harbor-prod.emeagso2026.local:8443" data-card>
         <div class="row">
           <span class="ico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v14H4z"/><path d="M4 9h16M8 13h8M8 16h5"/></svg></span>
@@ -218,6 +208,16 @@
         <h3>Source File Server</h3>
         <p>Browse and curl the staged NKP source bundles (HTTPS, basic auth). Mounted on the bastion via NFS.</p>
         <div class="url">…:8443 <span class="arrow">→</span></div>
+      </a>
+
+      <a class="card" href="./nkp-downloader.html" data-card>
+        <div class="row">
+          <span class="ico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/></svg></span>
+          <span class="tag local">tool</span>
+        </div>
+        <h3>NKP Downloader</h3>
+        <p>Paste a Nutanix signed download link → get the ready <code style="font-family:var(--mono);font-size:12px;color:var(--ink-dim)">curl</code> to pull the bundle onto Harbor.</p>
+        <div class="url">nkp-downloader.html <span class="arrow">→</span></div>
       </a>
 
       <a class="card" href="./nkp-env-builder.html" data-card>
