@@ -175,7 +175,7 @@
     <fieldset>
       <div class="sec-head"><span class="sec-num">02</span><h2>Harbor Registry</h2><span class="hint">the source of truth</span></div>
       <div class="grid">
-        <div class="field"><label>Registry host (FQDN) <span class="k">REGISTRY_HOST</span></label><input id="REGISTRY_HOST" value="harbor-prod.emeagso2026.local"></div>
+        <div class="field"><label>Registry host (FQDN) <span class="k">REGISTRY_HOST</span></label><input id="REGISTRY_HOST" value="nkp-registry.emeagso2026.local"></div>
         <div class="field"><label>Registry IP <span class="k">REGISTRY_IP</span></label><input id="REGISTRY_IP" value="10.68.24.103"></div>
         <div class="field"><label>Mirror project <span class="k">REGISTRY_MIRROR_PROJECT</span></label><input id="REGISTRY_MIRROR_PROJECT" value="nkp-2-17-0"></div>
         <div class="field"><label>Admin user <span class="k">REGISTRY_USERNAME</span></label><input id="REGISTRY_USERNAME" value="admin"></div>
@@ -197,14 +197,19 @@
     <fieldset>
       <div class="sec-head"><span class="sec-num">04</span><h2>Prism Central</h2><span class="hint">cluster target</span></div>
       <div class="grid">
-        <div class="field"><label>PC endpoint <span class="k">NUTANIX_ENDPOINT</span></label><input id="NUTANIX_ENDPOINT" value="pc.emeagso2026.local"></div>
+        <div class="field"><label>PC endpoint (IP or FQDN) <span class="k">NUTANIX_ENDPOINT</span></label><input id="NUTANIX_ENDPOINT" value="pc.emeagso2026.local" placeholder="10.68.24.x or pc.emeagso2026.local"></div>
         <div class="field"><label>Port <span class="k">NUTANIX_PORT</span></label><input id="NUTANIX_PORT" value="9440"></div>
         <div class="field"><label>PC user <span class="k">NUTANIX_USER</span></label><input id="NUTANIX_USER" value="nkp-svc@emeagso2026.local"></div>
         <div class="field"><label>PC password <span class="k">NUTANIX_PASSWORD</span></label><input id="NUTANIX_PASSWORD" value="CHANGE_ME"></div>
+        <div class="field" style="grid-column:1/-1">
+          <button type="button" id="pcConnect" style="font-family:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:8px;border:1px solid #2f7d59;background:#5ee3a1;color:#06231a;cursor:pointer">Connect to PC → list images & subnets</button>
+          <span id="pcStatus" style="margin-left:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#8b98a9"></span>
+          <div style="margin-top:6px;font-size:11.5px;color:#5b6675">Backend: <code style="font-family:monospace">https://nkp-registry.emeagso2026.local:8445</code> queries Prism Central and fills the dropdowns below.</div>
+        </div>
         <div class="field"><label>Prism Element cluster <span class="k">PRISM_ELEMENT_CLUSTER</span></label><input id="PRISM_ELEMENT_CLUSTER" value="PE-CLUSTER-01"></div>
-        <div class="field"><label>Subnet <span class="k">SUBNET_NAME</span></label><input id="SUBNET_NAME" value="nkp-net"></div>
+        <div class="field"><label>Subnet <span class="k">SUBNET_NAME</span></label><input id="SUBNET_NAME" value="nkp-net" list="dl-subnets" autocomplete="off"><datalist id="dl-subnets"></datalist></div>
         <div class="field"><label>Storage container <span class="k">NUTANIX_STORAGE_CONTAINER</span></label><input id="NUTANIX_STORAGE_CONTAINER" value="SelfServiceContainer"></div>
-        <div class="field"><label>Node image name <span class="k">NODE_IMAGE_NAME</span></label><input id="NODE_IMAGE_NAME" value="nkp-rocky-10-2.17.0"></div>
+        <div class="field"><label>Node image name <span class="k">NODE_IMAGE_NAME</span></label><input id="NODE_IMAGE_NAME" value="nkp-rocky-10-2.17.0" list="dl-images" autocomplete="off"><datalist id="dl-images"></datalist></div>
       </div>
     </fieldset>
 
@@ -286,7 +291,7 @@ function model(){
   g.AIRGAPPED = airgapped;
   const M = g.NKP_SOURCES_MOUNT || '/mnt/nkp-sources';
   const V = g.NKP_VERSION || '2.17.0';
-  const host = g.REGISTRY_HOST || 'harbor-prod.local';
+  const host = g.REGISTRY_HOST || 'nkp-registry.local';
   // derived
   g.REGISTRY_URL          = `https://${host}`;
   g.REGISTRY_MIRROR_URL   = `https://${host}/${g.REGISTRY_MIRROR_PROJECT}`;
@@ -400,6 +405,46 @@ $('cp').addEventListener('click',async()=>{
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
 
 render();
+
+// --- live PC connect: query the downloader backend, fill image/subnet dropdowns ---
+(function(){
+  const BACKEND = ('https://'+location.hostname+':8445'); // same box, downloader backend
+  const btn = document.getElementById('pcConnect');
+  const stat = document.getElementById('pcStatus');
+  if(!btn) return;
+  async function pcFetch(kind){
+    const pc = document.getElementById('NUTANIX_ENDPOINT').value.trim();
+    const user = document.getElementById('NUTANIX_USER').value.trim();
+    const pass = document.getElementById('NUTANIX_PASSWORD').value;
+    const r = await fetch(BACKEND+'/pc/'+kind, {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({pc, user, pass})});
+    if(!r.ok){ const e=await r.json().catch(()=>({error:'request failed'})); throw new Error(e.error||('HTTP '+r.status)); }
+    return (await r.json()).items || [];
+  }
+  function fill(listId, items, label){
+    const dl = document.getElementById(listId); dl.innerHTML='';
+    items.forEach(it=>{
+      const o=document.createElement('option');
+      o.value = it.name;
+      o.label = label(it);
+      dl.appendChild(o);
+    });
+  }
+  btn.addEventListener('click', async ()=>{
+    stat.style.color='#8b98a9'; stat.textContent='connecting…'; btn.disabled=true;
+    try{
+      const [imgs, subs] = await Promise.all([pcFetch('images'), pcFetch('subnets')]);
+      fill('dl-images', imgs, it=>it.type||'image');
+      fill('dl-subnets', subs, it=>it.vlan!=null?('vlan '+it.vlan):'subnet');
+      stat.style.color='#5ee3a1';
+      stat.textContent = `✓ ${imgs.length} images, ${subs.length} subnets — click the Subnet / Node image fields to pick`;
+    }catch(e){
+      stat.style.color='#f2776b';
+      stat.textContent = '✗ '+e.message;
+    }finally{ btn.disabled=false; }
+  });
+})();
+
 </script>
 </body>
 </html>
