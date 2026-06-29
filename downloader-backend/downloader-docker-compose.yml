@@ -1,0 +1,18 @@
+services:
+  nkp-downloader:
+    build: .
+    image: nkp-downloader:local
+    container_name: nkp-downloader
+    restart: unless-stopped
+    ports:
+      - "8445:8445"
+    environment:
+      NKP_DEST: /data/nkp-sources
+      NKP_DL_PORT: "8445"
+      NKP_DL_USER: "nkpfiles"
+      NKP_DL_PASS: "REPLACE_FILES_PASSWORD"
+      NKP_TLS_CERT: /certs/nkp-registry-fullchain.crt
+      NKP_TLS_KEY: /certs/nkp-registry.key
+    volumes:
+      - /data/nkp-sources:/data/nkp-sources
+      - /opt/harbor/certs:/certs:ro
