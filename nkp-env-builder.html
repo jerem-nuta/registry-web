@@ -175,11 +175,11 @@
     <fieldset>
       <div class="sec-head"><span class="sec-num">02</span><h2>Harbor Registry</h2><span class="hint">the source of truth</span></div>
       <div class="grid">
-        <div class="field"><label>Registry host (FQDN) <span class="k">REGISTRY_HOST</span></label><input id="REGISTRY_HOST" value="nkp-registry.emeagso2026.local"></div>
-        <div class="field"><label>Registry IP <span class="k">REGISTRY_IP</span></label><input id="REGISTRY_IP" value="10.68.24.103"></div>
+        <div class="field"><label>Registry host (FQDN) <span class="k">REGISTRY_HOST</span></label><input id="REGISTRY_HOST" value="registry.emeagso2026.local"></div>
+        <div class="field"><label>Registry IP <span class="k">REGISTRY_IP</span></label><input id="REGISTRY_IP" value="CHANGE_ME"></div>
         <div class="field"><label>Mirror project <span class="k">REGISTRY_MIRROR_PROJECT</span></label><input id="REGISTRY_MIRROR_PROJECT" value="nkp-2-17-0"></div>
         <div class="field"><label>Admin user <span class="k">REGISTRY_USERNAME</span></label><input id="REGISTRY_USERNAME" value="admin"></div>
-        <div class="field"><label>Admin password <span class="k">REGISTRY_PASSWORD</span></label><input id="REGISTRY_PASSWORD" value="Harbor12345"></div>
+        <div class="field"><label>Admin password <span class="k">REGISTRY_PASSWORD</span></label><input id="REGISTRY_PASSWORD" value="CHANGE_ME"></div>
         <div class="field"><label>Docker Hub cache project <span class="k">DOCKERHUB_CACHE_PROJECT</span></label><input id="DOCKERHUB_CACHE_PROJECT" value="dockerhub"></div>
       </div>
     </fieldset>
@@ -188,7 +188,7 @@
       <div class="sec-head"><span class="sec-num">03</span><h2>NFS Source Mount</h2><span class="hint">bastion ↔ harbor</span></div>
       <div class="grid">
         <div class="field"><label>Mount point (bastion) <span class="k">NKP_SOURCES_MOUNT</span></label><input id="NKP_SOURCES_MOUNT" value="/mnt/nkp-sources"></div>
-        <div class="field"><label>NFS server IP <span class="k">NFS_SERVER_IP</span></label><input id="NFS_SERVER_IP" value="10.68.24.103"></div>
+        <div class="field"><label>NFS server IP <span class="k">NFS_SERVER_IP</span></label><input id="NFS_SERVER_IP" value="CHANGE_ME"></div>
         <div class="field full"><label>Export path <span class="k">NFS_EXPORT_PATH</span></label><input id="NFS_EXPORT_PATH" value="/data/nkp-sources"></div>
       </div>
       <p class="note" style="margin-top:8px">Bundle paths (CLI, konvoy, kommander, catalog) are derived from the mount point + version automatically.</p>
@@ -197,34 +197,33 @@
     <fieldset>
       <div class="sec-head"><span class="sec-num">04</span><h2>Prism Central</h2><span class="hint">cluster target</span></div>
       <div class="grid">
-        <div class="field"><label>PC endpoint (IP or FQDN) <span class="k">NUTANIX_ENDPOINT</span></label><input id="NUTANIX_ENDPOINT" value="pc.emeagso2026.local" placeholder="10.68.24.x or pc.emeagso2026.local"></div>
+        <div class="field"><label>PC endpoint (IP or FQDN) <span class="k">NUTANIX_ENDPOINT</span></label><input id="NUTANIX_ENDPOINT" value="CHANGE_ME" placeholder="10.68.24.x or pc.emeagso2026.local"></div>
         <div class="field"><label>Port <span class="k">NUTANIX_PORT</span></label><input id="NUTANIX_PORT" value="9440"></div>
-        <div class="field"><label>PC user <span class="k">NUTANIX_USER</span></label><input id="NUTANIX_USER" value="nkp-svc@emeagso2026.local"></div>
+        <div class="field"><label>PC user <span class="k">NUTANIX_USER</span></label><input id="NUTANIX_USER" value="CHANGE_ME"></div>
         <div class="field"><label>PC password <span class="k">NUTANIX_PASSWORD</span></label><input id="NUTANIX_PASSWORD" value="CHANGE_ME"></div>
         <div class="field" style="grid-column:1/-1">
-          <button type="button" id="pcConnect" style="font-family:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:8px;border:1px solid #2f7d59;background:#5ee3a1;color:#06231a;cursor:pointer">Connect to PC → list images & subnets</button>
+          <button type="button" id="pcConnect" style="font-family:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:8px;border:1px solid #2f7d59;background:#5ee3a1;color:#06231a;cursor:pointer">Connect to PC → list clusters</button>
           <span id="pcStatus" style="margin-left:12px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#8b98a9"></span>
-          <div style="margin-top:6px;font-size:11.5px;color:#5b6675">Backend: <code style="font-family:monospace">https://nkp-registry.emeagso2026.local:8445</code> queries Prism Central and fills the dropdowns below.</div>
+          <div style="margin-top:6px;font-size:11.5px;color:#5b6675">Backend queries Prism Central, lists PE clusters; pick one to load its subnets + available images.</div>
         </div>
-        <div class="field"><label>Prism Element cluster <span class="k">PRISM_ELEMENT_CLUSTER</span></label><input id="PRISM_ELEMENT_CLUSTER" value="PE-CLUSTER-01"></div>
-        <div class="field"><label>Subnet <span class="k">SUBNET_NAME</span></label><input id="SUBNET_NAME" value="nkp-net" list="dl-subnets" autocomplete="off"><datalist id="dl-subnets"></datalist></div>
-        <div class="field"><label>Storage container <span class="k">NUTANIX_STORAGE_CONTAINER</span></label><input id="NUTANIX_STORAGE_CONTAINER" value="SelfServiceContainer"></div>
-        <div class="field"><label>Node image name <span class="k">NODE_IMAGE_NAME</span></label><input id="NODE_IMAGE_NAME" value="nkp-rocky-10-2.17.0" list="dl-images" autocomplete="off"><datalist id="dl-images"></datalist></div>
+        <div class="field"><label>Prism Element cluster <span class="k">PRISM_ELEMENT_CLUSTER</span></label><select id="PRISM_ELEMENT_CLUSTER"><option value="">— connect to PC first —</option></select></div>
+        <div class="field"><label>Subnet <span class="k">SUBNET_NAME</span></label><input id="SUBNET_NAME" value="CHANGE_ME" list="dl-subnets" autocomplete="off"><datalist id="dl-subnets"></datalist></div>
+        <div class="field"><label>Node image name <span class="k">NODE_IMAGE_NAME</span></label><input id="NODE_IMAGE_NAME" value="CHANGE_ME" list="dl-images" autocomplete="off"><datalist id="dl-images"></datalist></div>
       </div>
     </fieldset>
 
     <fieldset>
       <div class="sec-head"><span class="sec-num">05</span><h2>Cluster Topology</h2><span class="hint">name &amp; addressing</span></div>
       <div class="grid">
-        <div class="field"><label>Cluster name <span class="k">CLUSTER_NAME</span></label><input id="CLUSTER_NAME" value="nkp-mgmt"></div>
-        <div class="field"><label>Control-plane VIP <span class="k">CONTROL_PLANE_ENDPOINT_IP</span></label><input id="CONTROL_PLANE_ENDPOINT_IP" value="10.68.24.107"></div>
-        <div class="field"><label>LB IP range (MetalLB) <span class="k">LB_IP_RANGE</span></label><input id="LB_IP_RANGE" value="10.68.24.110-10.68.24.114"></div>
-        <div class="field"><label>Cluster hostname (dashboard) <span class="k">CLUSTER_HOSTNAME</span></label><input id="CLUSTER_HOSTNAME" value="nkp.emeagso2026.local"></div>
+        <div class="field"><label>Cluster name <span class="k">CLUSTER_NAME</span></label><input id="CLUSTER_NAME" value="CHANGE_ME"></div>
+        <div class="field"><label>Control-plane VIP <span class="k">CONTROL_PLANE_ENDPOINT_IP</span></label><input id="CONTROL_PLANE_ENDPOINT_IP" value="CHANGE_ME"></div>
+        <div class="field"><label>LB IP range (MetalLB) <span class="k">LB_IP_RANGE</span></label><input id="LB_IP_RANGE" value="CHANGE_ME"></div>
+        <div class="field"><label>Cluster hostname (dashboard) <span class="k">CLUSTER_HOSTNAME</span></label><input id="CLUSTER_HOSTNAME" value="CHANGE_ME"></div>
         <div class="field"><label>Control-plane replicas <span class="k">CONTROL_PLANE_REPLICAS</span></label><input id="CONTROL_PLANE_REPLICAS" type="number" value="3"></div>
         <div class="field"><label>Worker replicas <span class="k">WORKER_REPLICAS</span></label><input id="WORKER_REPLICAS" type="number" value="4"></div>
         <div class="field"><label>Pod CIDR <span class="k">POD_CIDR</span></label><input id="POD_CIDR" value="192.168.0.0/16"></div>
         <div class="field"><label>Service CIDR <span class="k">SERVICE_CIDR</span></label><input id="SERVICE_CIDR" value="10.96.0.0/12"></div>
-        <div class="field full"><label>SSH public key file <span class="k">SSH_PUBLIC_KEY_FILE</span></label><input id="SSH_PUBLIC_KEY_FILE" value="/home/nutanix/.ssh/id_ed25519.pub"></div>
+        <div class="field full"><label>SSH public key file <span class="k">SSH_PUBLIC_KEY_FILE</span></label><input id="SSH_PUBLIC_KEY_FILE" value="CHANGE_ME"></div>
       </div>
       <div class="sec-head" style="margin-top:22px"><span class="sec-num">05b</span><h2>Node Sizing</h2><span class="hint">per-node resources</span></div>
       <div class="grid">
@@ -278,7 +277,7 @@ document.querySelectorAll('#seg-air button').forEach(b=>{
 const SIMPLE = ['NKP_VERSION','NKP_LICENSE_TIER','KUBERNETES_VERSION',
   'REGISTRY_HOST','REGISTRY_IP','REGISTRY_MIRROR_PROJECT','REGISTRY_USERNAME','REGISTRY_PASSWORD','DOCKERHUB_CACHE_PROJECT',
   'NKP_SOURCES_MOUNT','NFS_SERVER_IP','NFS_EXPORT_PATH',
-  'NUTANIX_ENDPOINT','NUTANIX_PORT','NUTANIX_USER','NUTANIX_PASSWORD','PRISM_ELEMENT_CLUSTER','SUBNET_NAME','NUTANIX_STORAGE_CONTAINER','NODE_IMAGE_NAME',
+  'NUTANIX_ENDPOINT','NUTANIX_PORT','NUTANIX_USER','NUTANIX_PASSWORD','PRISM_ELEMENT_CLUSTER','SUBNET_NAME','NODE_IMAGE_NAME',
   'CLUSTER_NAME','CONTROL_PLANE_ENDPOINT_IP','LB_IP_RANGE','CLUSTER_HOSTNAME','CONTROL_PLANE_REPLICAS','WORKER_REPLICAS','POD_CIDR','SERVICE_CIDR','SSH_PUBLIC_KEY_FILE',
   'CONTROL_PLANE_VCPUS','CONTROL_PLANE_MEMORY_GIB','CONTROL_PLANE_DISK_GIB','WORKER_VCPUS','WORKER_MEMORY_GIB','WORKER_DISK_GIB'];
 
@@ -334,7 +333,7 @@ function layout(g){
     K('NKP_CLI_BUNDLE'),K('KONVOY_IMAGE_BUNDLE'),K('KOMMANDER_IMAGE_BUNDLE'),K('CATALOG_IMAGE_BUNDLE'),
     B(),C('— prism central —'),
     K('NUTANIX_ENDPOINT'),K('NUTANIX_PORT'),K('NUTANIX_USER'),K('NUTANIX_PASSWORD'),
-    K('NUTANIX_INSECURE'),K('PC_CA_CERT'),K('PRISM_ELEMENT_CLUSTER'),K('SUBNET_NAME'),K('NUTANIX_STORAGE_CONTAINER'),
+    K('NUTANIX_INSECURE'),K('PC_CA_CERT'),K('PRISM_ELEMENT_CLUSTER'),K('SUBNET_NAME'),
     B(),C('— cluster topology / addressing —'),
     K('CLUSTER_NAME'),K('CONTROL_PLANE_ENDPOINT_IP'),K('LB_IP_RANGE'),
     K('CONTROL_PLANE_REPLICAS'),K('WORKER_REPLICAS'),K('NODE_IMAGE_NAME'),K('POD_CIDR'),K('SERVICE_CIDR'),
@@ -406,42 +405,87 @@ function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');set
 
 render();
 
-// --- live PC connect: query the downloader backend, fill image/subnet dropdowns ---
+// --- live PC connect: cluster-first cascade (clusters -> subnets filtered by cluster + images) ---
 (function(){
   const BACKEND = ('https://'+location.hostname+':8445'); // same box, downloader backend
   const btn = document.getElementById('pcConnect');
   const stat = document.getElementById('pcStatus');
+  const cluSel = document.getElementById('PRISM_ELEMENT_CLUSTER');
   if(!btn) return;
+
+  let SUBNETS = [];   // cached full subnet list (with cluster_uuid) for client-side filtering
+  let CLUSTERS = [];  // cached clusters [{name,uuid}]
+
+  function creds(){
+    return {
+      pc:   document.getElementById('NUTANIX_ENDPOINT').value.trim(),
+      user: document.getElementById('NUTANIX_USER').value.trim(),
+      pass: document.getElementById('NUTANIX_PASSWORD').value
+    };
+  }
   async function pcFetch(kind){
-    const pc = document.getElementById('NUTANIX_ENDPOINT').value.trim();
-    const user = document.getElementById('NUTANIX_USER').value.trim();
-    const pass = document.getElementById('NUTANIX_PASSWORD').value;
     const r = await fetch(BACKEND+'/pc/'+kind, {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({pc, user, pass})});
+      body: JSON.stringify(creds())});
     if(!r.ok){ const e=await r.json().catch(()=>({error:'request failed'})); throw new Error(e.error||('HTTP '+r.status)); }
     return (await r.json()).items || [];
   }
-  function fill(listId, items, label){
+  function fillDatalist(listId, items, label){
     const dl = document.getElementById(listId); dl.innerHTML='';
     items.forEach(it=>{
       const o=document.createElement('option');
-      o.value = it.name;
-      o.label = label(it);
+      o.value = it.name; o.label = label(it);
       dl.appendChild(o);
     });
   }
+  function fillClusterSelect(items){
+    cluSel.innerHTML = '<option value="">— select a Prism Element cluster —</option>';
+    items.forEach(it=>{
+      const o=document.createElement('option');
+      o.value = it.name; o.textContent = it.name;
+      o.dataset.uuid = it.uuid || '';
+      cluSel.appendChild(o);
+    });
+  }
+
+  // Step 1: connect -> list clusters
   btn.addEventListener('click', async ()=>{
     stat.style.color='#8b98a9'; stat.textContent='connecting…'; btn.disabled=true;
     try{
-      const [imgs, subs] = await Promise.all([pcFetch('images'), pcFetch('subnets')]);
-      fill('dl-images', imgs, it=>it.type||'image');
-      fill('dl-subnets', subs, it=>it.vlan!=null?('vlan '+it.vlan):'subnet');
+      CLUSTERS = await pcFetch('clusters');
+      // prefer real PE clusters if the flag is present
+      const pes = CLUSTERS.filter(c=>c.is_pe!==false);
+      fillClusterSelect(pes.length?pes:CLUSTERS);
       stat.style.color='#5ee3a1';
-      stat.textContent = `✓ ${imgs.length} images, ${subs.length} subnets — click the Subnet / Node image fields to pick`;
+      stat.textContent = `✓ ${(pes.length?pes:CLUSTERS).length} cluster(s) — pick one to load its subnets & images`;
     }catch(e){
       stat.style.color='#f2776b';
       stat.textContent = '✗ '+e.message;
     }finally{ btn.disabled=false; }
+  });
+
+  // Step 2: cluster chosen -> fetch subnets + images, both filtered to the cluster (v4)
+  cluSel.addEventListener('change', async ()=>{
+    const opt = cluSel.selectedOptions[0];
+    const cuuid = opt ? (opt.dataset.uuid||'') : '';
+    const cname = cluSel.value;
+    if(!cname){ return; }
+    stat.style.color='#8b98a9'; stat.textContent=`loading subnets & images for ${cname}…`;
+    try{
+      const [subs, imgs] = await Promise.all([pcFetch('subnets'), pcFetch('images')]);
+      // subnets: filter by cluster uuid (v4 clusterReference)
+      let fsubs = subs;
+      if(cuuid) fsubs = subs.filter(s=>!s.cluster_uuid || s.cluster_uuid===cuuid);
+      fillDatalist('dl-subnets', fsubs, it=>it.vlan!=null?('vlan '+it.vlan):'subnet');
+      // images: v4 carries clusterLocationExtIds -> filter to images present on this cluster
+      let fimgs = imgs;
+      if(cuuid) fimgs = imgs.filter(i=>!i.cluster_uuids || i.cluster_uuids.length===0 || i.cluster_uuids.includes(cuuid));
+      fillDatalist('dl-images', fimgs, it=>it.type||'image');
+      stat.style.color='#5ee3a1';
+      stat.textContent = `✓ ${cname}: ${fsubs.length} subnet(s), ${fimgs.length} image(s) — click the Subnet / Node image fields`;
+    }catch(e){
+      stat.style.color='#f2776b';
+      stat.textContent = '✗ '+e.message;
+    }
   });
 })();
 
