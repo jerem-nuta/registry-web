@@ -145,7 +145,7 @@
 
         <rect class="bx" x="62" y="316" width="166" height="52" rx="10"/>
         <text class="t" x="145" y="336" text-anchor="middle">File server</text>
-        <text class="ts tac" x="145" y="354" text-anchor="middle">:8443 · sources</text>
+        <text class="ts tac" x="145" y="354" text-anchor="middle">:8080 · sources</text>
 
         <rect class="bx" x="244" y="316" width="160" height="52" rx="10"/>
         <text class="t" x="324" y="336" text-anchor="middle">Env builder</text>
@@ -200,14 +200,14 @@
         <div class="url">registry.emeagso2026.local <span class="arrow">→</span></div>
       </a>
 
-      <a class="card" href="#" data-host data-port="8080" data-card target="_blank" rel="noopener">
+      <a class="card" href="#" data-host data-port="8080" data-path="/files/" data-card target="_blank" rel="noopener">
         <div class="row">
           <span class="ico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 5h16v14H4z"/><path d="M4 9h16M8 13h8M8 16h5"/></svg></span>
-          <span class="tag local">local · 8443</span>
+          <span class="tag local">local · 8080</span>
         </div>
-        <h3>Source File Server</h3>
-        <p>Browse and curl the staged NKP source bundles (HTTPS, basic auth). Mounted on the bastion via NFS.</p>
-        <div class="url">…:8443 <span class="arrow">→</span></div>
+        <h3>Staged Bundles</h3>
+        <p>Browse and <code style="font-family:var(--mono);font-size:12px;color:var(--ink-dim)">curl</code> the NKP source bundles staged in <code style="font-family:var(--mono);font-size:12px;color:var(--ink-dim)">/data/nkp-sources</code> (also mounted on the bastion via NFS).</p>
+        <div class="url">…:8080/files/ <span class="arrow">→</span></div>
       </a>
 
       <a class="card" href="#" data-host data-port="8445" data-card target="_blank" rel="noopener">
@@ -238,6 +238,16 @@
         <h3>Env Builder</h3>
         <p>Generate <code style="font-family:var(--mono);font-size:12px;color:var(--ink-dim)">nkp-deploy.env</code> from a form — versions, registry, Prism Central, topology, node sizing.</p>
         <div class="url">nkp-env-builder.html <span class="arrow">→</span></div>
+      </a>
+
+      <a class="card" href="./nkp-stack.html" data-card target="_blank" rel="noopener">
+        <div class="row">
+          <span class="ico violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><path d="M10 11L6.5 7.5M14 11l3.5-3.5M10 13l-3.5 3.5M14 13l3.5 3.5"/></svg></span>
+          <span class="tag local">map</span>
+        </div>
+        <h3>Stack Components</h3>
+        <p>Interactive map of the NKP open-source stack — networking, observability, storage, platform, runtime, OS — with links to each project's docs.</p>
+        <div class="url">nkp-stack.html <span class="arrow">→</span></div>
       </a>
 
     </div>
@@ -286,7 +296,7 @@
         <div class="url">portal.nutanix.com · NKP docs <span class="arrow">→</span></div>
       </a>
 
-      <a class="card" href="https://opendocs.nutanix.com/capx/latest/" target="_blank" rel="noopener" data-card>
+      <a class="card" href="https://opendocs.nutanix.com/capx/v1.8.x/getting_started/" target="_blank" rel="noopener" data-card>
         <div class="row">
           <span class="ico green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3v18M5 7l7-4 7 4M5 17l7 4 7-4"/></svg></span>
           <span class="tag ext">docs</span>
@@ -348,9 +358,10 @@
     var host = window.location.hostname;  // e.g. registry.emeagso2026.local OR 10.68.24.103
     document.querySelectorAll('a[data-host]').forEach(function(a){
       var port = a.getAttribute('data-port');
+      var path = a.getAttribute('data-path') || '/';
       a.href = (port === '443')
-        ? 'https://' + host + '/'
-        : 'https://' + host + ':' + port + '/';
+        ? 'https://' + host + path
+        : 'https://' + host + ':' + port + path;
     });
   })();
 </script>

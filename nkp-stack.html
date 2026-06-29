@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NKP Stack — Component Map</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#111722; --panel2:#0e141d; --line:#1f2937;
+    --ink:#e6edf3; --ink-dim:#8b98a9; --ink-mute:#5b6675;
+    --green:#5ee3a1; --blue:#6cb6ff; --violet:#9d8cff; --amber:#f2b35e;
+    --coral:#f2776b; --teal:#43d9b8;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --sans:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;
+    background-image:radial-gradient(900px 500px at 80% -10%,rgba(94,227,161,.06),transparent 60%),
+      radial-gradient(700px 400px at -10% 110%,rgba(157,140,255,.05),transparent 60%);}
+  .wrap{max-width:1100px;margin:0 auto;padding:32px 24px 64px}
+  header{display:flex;align-items:baseline;gap:14px;margin-bottom:8px}
+  header .n{font-family:var(--mono);font-size:13px;color:var(--violet);font-weight:600}
+  header h1{font-size:20px;letter-spacing:.04em;font-weight:600}
+  header .line{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+  .sub{color:var(--ink-dim);font-size:13.5px;margin:0 0 26px;max-width:680px;line-height:1.6}
+  .sub a{color:var(--blue);text-decoration:none}
+
+  .stage{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap}
+  .map{flex:1 1 460px;min-width:340px}
+  svg{width:100%;height:auto;display:block}
+
+  /* radial nodes */
+  .branch{cursor:pointer}
+  .branch .hub{transition:transform .15s,filter .15s}
+  .branch:hover .hub{filter:brightness(1.12)}
+  .branch.active .hub{filter:brightness(1.2)}
+  .branch text{pointer-events:none;font-family:var(--sans)}
+  .spoke{transition:opacity .2s,stroke-width .2s}
+  .center circle{filter:drop-shadow(0 0 18px rgba(94,227,161,.25))}
+
+  /* detail panel */
+  .panel{flex:1 1 320px;min-width:300px;background:linear-gradient(165deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:16px;padding:20px 22px;min-height:340px;
+    box-shadow:0 24px 60px -24px rgba(0,0,0,.7)}
+  .panel .phead{display:flex;align-items:center;gap:11px;margin-bottom:4px}
+  .panel .dot{width:12px;height:12px;border-radius:3px;flex:none}
+  .panel h2{font-size:16px;font-weight:600;letter-spacing:.02em}
+  .panel .pcount{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink-mute)}
+  .panel .pdesc{color:var(--ink-dim);font-size:12.5px;line-height:1.55;margin:8px 0 16px}
+  .panel .empty{color:var(--ink-mute);font-size:13.5px;line-height:1.6;display:flex;
+    flex-direction:column;align-items:center;justify-content:center;height:240px;text-align:center;gap:10px}
+  .panel .empty svg{width:42px;height:42px;opacity:.5}
+
+  .tool{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;
+    border:1px solid transparent;text-decoration:none;color:var(--ink);transition:.14s;margin-bottom:6px}
+  .tool:hover{background:rgba(94,227,161,.05);border-color:var(--line)}
+  .tool .tname{font-weight:600;font-size:14px}
+  .tool .tdesc{font-size:12px;color:var(--ink-dim)}
+  .tool .col{display:flex;flex-direction:column;gap:1px}
+  .tool .arrow{margin-left:auto;color:var(--ink-mute);transition:.14s}
+  .tool:hover .arrow{color:var(--green);transform:translateX(2px)}
+  .tool .tag{font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:5px;
+    background:rgba(108,182,255,.1);color:var(--blue);border:1px solid rgba(108,182,255,.18)}
+
+  .back{margin-top:42px;display:inline-flex;align-items:center;gap:8px;color:var(--ink-dim);
+    font-size:13px;text-decoration:none;padding:8px 14px;border:1px solid var(--line);border-radius:9px}
+  .back:hover{color:var(--green);border-color:#2f7d59}
+  footer{margin-top:38px;display:flex;justify-content:space-between;color:var(--ink-mute);
+    font-family:var(--mono);font-size:11px;border-top:1px solid var(--line);padding-top:16px;flex-wrap:wrap;gap:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><span class="n">//</span><h1>NKP Stack — Component Map</h1><span class="line"></span></header>
+  <p class="sub">The open-source components that make up the Nutanix Kubernetes Platform stack, grouped by function. Click a category in the map to reveal its tools and jump to their official docs.</p>
+
+  <div class="stage">
+    <div class="map">
+      <svg viewBox="0 0 520 520" id="radial" aria-label="Radial map of NKP stack categories">
+        <!-- spokes (drawn first, under nodes) -->
+        <g id="spokes" stroke-width="1.5" fill="none"></g>
+        <!-- center -->
+        <g class="center">
+          <circle cx="260" cy="260" r="50" fill="#0e141d" stroke="#2f7d59" stroke-width="1.5"/>
+          <text x="260" y="254" text-anchor="middle" fill="#5ee3a1" font-size="19" font-weight="700">NKP</text>
+          <text x="260" y="274" text-anchor="middle" fill="#8b98a9" font-size="11">2.17 stack</text>
+        </g>
+        <!-- category branches injected by JS -->
+        <g id="branches"></g>
+      </svg>
+    </div>
+
+    <div class="panel" id="panel">
+      <div class="empty" id="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 8v4l3 2"/></svg>
+        <div>Select a category in the map<br>to see its components and links.</div>
+      </div>
+      <div id="content" style="display:none"></div>
+    </div>
+  </div>
+
+  <a class="back" href="./index.html">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to lab portal
+  </a>
+
+  <footer>
+    <span>// emeagso2026 · NKP 2.17 stack reference</span>
+    <span>23 components · 6 categories</span>
+  </footer>
+</div>
+
+<script>
+// ---- data: categories, colors, components with official docs ----
+const CATS = [
+  { id:'net', label:'Networking', sub:'CNI · LB · ingress · mesh', color:'#9d8cff', angle:-90,
+    desc:'Container networking, load balancing, ingress routing, and service mesh.',
+    tools:[
+      {name:'Cilium', desc:'eBPF CNI (NKP default)', tag:'CNI', url:'https://docs.cilium.io/'},
+      {name:'Calico', desc:'Alternative CNI', tag:'CNI', url:'https://docs.tigera.io/calico/latest/about/'},
+      {name:'MetalLB', desc:'Bare-metal load balancer', tag:'LB', url:'https://metallb.io/'},
+      {name:'Traefik', desc:'L7 ingress controller (NKP default)', tag:'ingress', url:'https://doc.traefik.io/traefik/'},
+      {name:'Istio', desc:'Service mesh', tag:'mesh', url:'https://istio.io/latest/docs/'},
+    ]},
+  { id:'obs', label:'Observability', sub:'metrics · logs · traces · cost', color:'#43d9b8', angle:-30,
+    desc:'Monitoring, logging, tracing, alert visualization, and cost insight.',
+    tools:[
+      {name:'Prometheus', desc:'Metrics & alerting', tag:'metrics', url:'https://prometheus.io/docs/'},
+      {name:'Grafana', desc:'Dashboards', tag:'viz', url:'https://grafana.com/docs/grafana/latest/'},
+      {name:'Loki', desc:'Log aggregation', tag:'logs', url:'https://grafana.com/docs/loki/latest/'},
+      {name:'Thanos', desc:'Long-term Prometheus storage', tag:'metrics', url:'https://thanos.io/'},
+      {name:'Jaeger', desc:'Distributed tracing', tag:'traces', url:'https://www.jaegertracing.io/docs/'},
+      {name:'Kiali', desc:'Service mesh console', tag:'mesh', url:'https://kiali.io/docs/'},
+      {name:'Karma', desc:'Alertmanager dashboard', tag:'alerts', url:'https://github.com/prymitive/karma'},
+      {name:'OpenCost', desc:'Kubernetes cost monitoring', tag:'cost', url:'https://www.opencost.io/docs/'},
+    ]},
+  { id:'sto', label:'Storage & data', sub:'block · object · databases', color:'#f2776b', angle:30,
+    desc:'Persistent storage and stateful data services running on the cluster.',
+    tools:[
+      {name:'Rook-Ceph', desc:'Cloud-native storage orchestrator', tag:'storage', url:'https://rook.io/docs/rook/latest-release/Getting-Started/intro/'},
+      {name:'CloudNativePG', desc:'PostgreSQL operator', tag:'database', url:'https://cloudnative-pg.io/documentation/current/'},
+    ]},
+  { id:'plat', label:'Platform & security', sub:'certs · backup', color:'#6cb6ff', angle:90,
+    desc:'Certificate lifecycle and cluster backup / disaster recovery.',
+    tools:[
+      {name:'cert-manager', desc:'X.509 certificate automation', tag:'certs', url:'https://cert-manager.io/docs/'},
+      {name:'Velero', desc:'Backup & restore / DR', tag:'backup', url:'https://velero.io/docs/'},
+    ]},
+  { id:'core', label:'Runtime & core', sub:'k8s · containerd · NDK', color:'#f2b35e', angle:150,
+    desc:'The Kubernetes control plane, container runtime, and Nutanix data services.',
+    tools:[
+      {name:'Kubernetes', desc:'Upstream orchestrator', tag:'core', url:'https://kubernetes.io/docs/home/'},
+      {name:'containerd', desc:'Container runtime', tag:'runtime', url:'https://containerd.io/docs/'},
+      {name:'NDK', desc:'Nutanix Data Services for Kubernetes', tag:'data', url:'https://portal.nutanix.com/page/documents/list?type=software&filterKey=software&filterVal=Nutanix%20Data%20Services%20for%20Kubernetes'},
+    ]},
+  { id:'os', label:'Operating systems', sub:'node images', color:'#5ee3a1', angle:210,
+    desc:'Base OS images for control-plane and worker nodes.',
+    tools:[
+      {name:'Rocky Linux', desc:'Default node image (NKP 2.12+)', tag:'OS', url:'https://docs.rockylinux.org/'},
+      {name:'Ubuntu', desc:'Alternative node image', tag:'OS', url:'https://documentation.ubuntu.com/'},
+    ]},
+];
+
+const NS='http://www.w3.org/2000/svg';
+const CX=260, CY=260, R=190;       // hub distance from center
+const spokes=document.getElementById('spokes');
+const branches=document.getElementById('branches');
+
+function pos(angleDeg, r){
+  const a=angleDeg*Math.PI/180;
+  return { x: CX + r*Math.cos(a), y: CY + r*Math.sin(a) };
+}
+
+CATS.forEach(cat=>{
+  const hub=pos(cat.angle, R);
+  const edge=pos(cat.angle, 52);   // start at edge of center circle
+  // spoke
+  const ln=document.createElementNS(NS,'line');
+  ln.setAttribute('x1',edge.x); ln.setAttribute('y1',edge.y);
+  ln.setAttribute('x2',hub.x);  ln.setAttribute('y2',hub.y);
+  ln.setAttribute('stroke',cat.color); ln.setAttribute('opacity','.35');
+  ln.setAttribute('class','spoke'); ln.dataset.cat=cat.id;
+  spokes.appendChild(ln);
+
+  // branch group (hub circle + labels)
+  const g=document.createElementNS(NS,'g');
+  g.setAttribute('class','branch'); g.dataset.cat=cat.id;
+
+  const c=document.createElementNS(NS,'circle');
+  c.setAttribute('cx',hub.x); c.setAttribute('cy',hub.y); c.setAttribute('r','42');
+  c.setAttribute('fill','#111722'); c.setAttribute('stroke',cat.color); c.setAttribute('stroke-width','1.5');
+  c.setAttribute('class','hub');
+  g.appendChild(c);
+
+  const t1=document.createElementNS(NS,'text');
+  t1.setAttribute('x',hub.x); t1.setAttribute('y',hub.y-2); t1.setAttribute('text-anchor','middle');
+  t1.setAttribute('fill',cat.color); t1.setAttribute('font-size','12.5'); t1.setAttribute('font-weight','700');
+  // wrap label into <=2 lines if long
+  const words=cat.label.split(' ');
+  if(cat.label.length>11 && words.length>1){
+    t1.setAttribute('y',hub.y-8);
+    t1.textContent=words[0];
+    const t1b=document.createElementNS(NS,'text');
+    t1b.setAttribute('x',hub.x); t1b.setAttribute('y',hub.y+7); t1b.setAttribute('text-anchor','middle');
+    t1b.setAttribute('fill',cat.color); t1b.setAttribute('font-size','12.5'); t1b.setAttribute('font-weight','700');
+    t1b.textContent=words.slice(1).join(' ');
+    g.appendChild(t1b);
+  } else { t1.textContent=cat.label; }
+  g.appendChild(t1);
+
+  const t2=document.createElementNS(NS,'text');
+  t2.setAttribute('x',hub.x); t2.setAttribute('y',hub.y+22); t2.setAttribute('text-anchor','middle');
+  t2.setAttribute('fill','#8b98a9'); t2.setAttribute('font-size','9.5');
+  t2.textContent=cat.tools.length+' tools';
+  g.appendChild(t2);
+
+  g.addEventListener('click',()=>select(cat.id));
+  branches.appendChild(g);
+});
+
+const panel=document.getElementById('panel');
+const content=document.getElementById('content');
+const empty=document.getElementById('empty');
+
+function select(id){
+  const cat=CATS.find(c=>c.id===id);
+  // highlight active branch + spoke
+  document.querySelectorAll('.branch').forEach(b=>b.classList.toggle('active',b.dataset.cat===id));
+  document.querySelectorAll('.spoke').forEach(s=>{
+    const on=s.dataset.cat===id;
+    s.setAttribute('opacity',on?'.9':'.18');
+    s.setAttribute('stroke-width',on?'2.5':'1.5');
+  });
+  // build panel
+  empty.style.display='none'; content.style.display='block';
+  let html='<div class="phead"><span class="dot" style="background:'+cat.color+'"></span>'
+    +'<h2 style="color:'+cat.color+'">'+cat.label+'</h2>'
+    +'<span class="pcount">'+cat.tools.length+' tools</span></div>'
+    +'<p class="pdesc">'+cat.desc+'</p>';
+  cat.tools.forEach(t=>{
+    html+='<a class="tool" href="'+t.url+'" target="_blank" rel="noopener">'
+      +'<div class="col"><span class="tname">'+t.name+'</span>'
+      +'<span class="tdesc">'+t.desc+'</span></div>'
+      +'<span class="tag">'+t.tag+'</span>'
+      +'<svg class="arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>'
+      +'</a>';
+  });
+  content.innerHTML=html;
+}
+</script>
+</body>
+</html>
