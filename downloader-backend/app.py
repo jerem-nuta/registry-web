@@ -13,7 +13,7 @@ import os, re, threading, uuid, base64
 from urllib.parse import urlparse, unquote
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
-import urllib.request, ssl
+import urllib.request, urllib.error, ssl
 
 DEST = os.environ.get("NKP_DEST", "/data/nkp-sources")
 PORT = int(os.environ.get("NKP_DL_PORT", "8445"))
@@ -61,40 +61,66 @@ def download(job_id, url):
         job["error"] = str(e)
 
 
-# --- Prism Central v3 list helper ---
+# --- Prism Central v4 list helper (namespace-aware) ---
 _SSL_NOVERIFY = ssl.create_default_context()
 _SSL_NOVERIFY.check_hostname = False
 _SSL_NOVERIFY.verify_mode = ssl.CERT_NONE
 
-def pc_list(pc_ip, user, password, kind):
-    """POST /api/nutanix/v3/{kind}s/list on Prism Central; return [{name,uuid},...]."""
-    url = f"https://{pc_ip}:9440/api/nutanix/v3/{kind}s/list"
-    body = json.dumps({"kind": kind, "length": 500}).encode()
+# v4 endpoint map: kind -> (namespace, version, path).
+# Versions are the GA-era defaults; we fall back across a few minor versions if PC is older/newer.
+_V4_MAP = {
+    "cluster": ("clustermgmt", ["v4.0", "v4.1"], "config/clusters"),
+    "subnet":  ("networking",  ["v4.0", "v4.1"], "config/subnets"),
+    "image":   ("vmm",         ["v4.0", "v4.1", "v4.2"], "content/images"),
+}
+
+def _http_get_json(url, user, password, timeout=20):
     auth = base64.b64encode(f"{user}:{password}".encode()).decode()
-    req = urllib.request.Request(url, data=body, method="POST", headers={
-        "Content-Type": "application/json",
+    req = urllib.request.Request(url, method="GET", headers={
         "Accept": "application/json",
         "Authorization": "Basic " + auth,
     })
-    with urllib.request.urlopen(req, timeout=20, context=_SSL_NOVERIFY) as r:
-        data = json.loads(r.read())
+    with urllib.request.urlopen(req, timeout=timeout, context=_SSL_NOVERIFY) as r:
+        return json.loads(r.read())
+
+def pc_list(pc_ip, user, password, kind):
+    """v4 GET on the right namespace; return [{name,uuid,...}]. Falls back across versions."""
+    ns, versions, path = _V4_MAP[kind]
+    data, last_err = None, None
+    for ver in versions:
+        url = f"https://{pc_ip}:9440/api/{ns}/{ver}/{path}?$page=0&$limit=100"
+        try:
+            data = _http_get_json(url, user, password)
+            break
+        except urllib.error.HTTPError as e:
+            last_err = e
+            # 404/406 => that version/namespace not present; try next
+            if e.code in (404, 406):
+                continue
+            raise
+    if data is None:
+        raise last_err or RuntimeError("no v4 version responded")
+
+    entities = data.get("data") or []   # v4 wraps results in "data"
     out = []
-    for e in data.get("entities", []):
-        meta = e.get("metadata", {})
-        spec = e.get("spec", {})
-        status = e.get("status", {})
-        name = spec.get("name") or status.get("name") or "(unnamed)"
-        uuid = meta.get("uuid", "")
+    for e in entities:
+        name = e.get("name") or "(unnamed)"
+        uuid = e.get("extId") or e.get("ext_id") or ""
         item = {"name": name, "uuid": uuid}
-        # for subnets, include vlan + cluster if present
         if kind == "subnet":
-            res = (status.get("resources") or {})
-            item["vlan"] = res.get("vlan_id")
+            item["vlan"] = e.get("networkId") if "networkId" in e else e.get("vlanId")
+            item["cluster_uuid"] = e.get("clusterReference") or ""
         if kind == "image":
-            res = (status.get("resources") or {})
-            item["type"] = res.get("image_type")
+            item["type"] = e.get("type") or ""
+            # v4 images carry their cluster placement here -> enables per-cluster filtering
+            item["cluster_uuids"] = e.get("clusterLocationExtIds") or []
+        if kind == "cluster":
+            # a real PE cluster has the AOS/hypervisor config; the PC itself is type PRISM_CENTRAL
+            cfg = (e.get("config") or {})
+            ctype = (cfg.get("clusterFunction") or cfg.get("clusterFunctions") or [])
+            if isinstance(ctype, str): ctype = [ctype]
+            item["is_pe"] = ("PRISM_CENTRAL" not in ctype)
         out.append(item)
-    # de-dup by name (PC can list image per-cluster copies)
     seen = {}
     for it in out:
         seen.setdefault(it["name"], it)
@@ -148,7 +174,7 @@ class H(BaseHTTPRequestHandler):
     def do_POST(self):
         # PC list endpoints authenticate against Prism Central itself (creds in body),
         # so they don't require the file-server basic-auth (allows the :8443 page to call them).
-        if self.path in ("/pc/images", "/pc/subnets"):
+        if self.path in ("/pc/images", "/pc/subnets", "/pc/clusters"):
             length = int(self.headers.get("Content-Length", 0))
             try:
                 data = json.loads(self.rfile.read(length) or b"{}")
@@ -159,7 +185,12 @@ class H(BaseHTTPRequestHandler):
             pw = data.get("pass") or ""
             if not pc_validate(pc):
                 return self._json({"error": "invalid PC address"}, 400)
-            kind = "image" if self.path.endswith("images") else "subnet"
+            if self.path.endswith("images"):
+                kind = "image"
+            elif self.path.endswith("subnets"):
+                kind = "subnet"
+            else:
+                kind = "cluster"
             try:
                 items = pc_list(pc, user, pw, kind)
                 return self._json({"items": items})
