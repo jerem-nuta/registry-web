@@ -144,6 +144,10 @@
 </style>
 </head>
 <body>
+<a href="./index.html" style="display:inline-flex;align-items:center;gap:8px;margin:18px 0 0 24px;color:#8b98a9;font-size:13px;text-decoration:none;padding:7px 13px;border:1px solid #1f2937;border-radius:9px">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+  Back to lab portal
+</a>
 <div class="wrap">
 
   <header class="top">
@@ -151,7 +155,7 @@
       <div class="glyph"><b>k</b></div>
       <div>
         <h1>NKP Deploy — Environment Builder</h1>
-        <div class="sub">nutanix kubernetes platform · 2.17 · air-gapped</div>
+        <div class="sub">nutanix kubernetes platform · 2.17–2.18 · air-gapped</div>
       </div>
     </div>
     <p class="lede">Fill the fields, watch <code>nkp-deploy.env</code> assemble live, then download it to <code>/data/nkp-sources/</code> on Harbor — the bastion reads it over NFS.</p>
@@ -163,7 +167,8 @@
     <fieldset>
       <div class="sec-head"><span class="sec-num">01</span><h2>Versions &amp; Tier</h2><span class="hint">what you're deploying</span></div>
       <div class="grid">
-        <div class="field"><label>NKP version <span class="k">NKP_VERSION</span></label><input id="NKP_VERSION" value="2.17.0"></div>
+        <div class="field"><label>NKP version <span class="k">NKP_VERSION</span></label>
+          <select id="NKP_VERSION"><option value="2.17.0">2.17.0</option><option value="2.17.1" selected>2.17.1</option><option value="2.18.0">2.18.0</option><option value="2.18.1">2.18.1</option></select></div>
         <div class="field"><label>License tier <span class="k">NKP_LICENSE_TIER</span></label>
           <select id="NKP_LICENSE_TIER"><option value="pro" selected>pro</option><option value="ultimate">ultimate</option><option value="starter">starter</option></select></div>
         <div class="field"><label>Kubernetes version <span class="k">KUBERNETES_VERSION</span></label><input id="KUBERNETES_VERSION" value="1.31.4"></div>
@@ -177,7 +182,7 @@
       <div class="grid">
         <div class="field"><label>Registry host (FQDN) <span class="k">REGISTRY_HOST</span></label><input id="REGISTRY_HOST" value="registry.emeagso2026.local"></div>
         <div class="field"><label>Registry IP <span class="k">REGISTRY_IP</span></label><input id="REGISTRY_IP" value="CHANGE_ME"></div>
-        <div class="field"><label>Mirror project <span class="k">REGISTRY_MIRROR_PROJECT</span></label><input id="REGISTRY_MIRROR_PROJECT" value="nkp-2-17-0"></div>
+        <div class="field"><label>Mirror project <span class="k">REGISTRY_MIRROR_PROJECT</span> <span style="color:var(--ink-faint);font-size:11px">(auto from version)</span></label><input id="REGISTRY_MIRROR_PROJECT" value="nkp-2-17-1" readonly style="opacity:.7"></div>
         <div class="field"><label>Admin user <span class="k">REGISTRY_USERNAME</span></label><input id="REGISTRY_USERNAME" value="admin"></div>
         <div class="field"><label>Admin password <span class="k">REGISTRY_PASSWORD</span></label><input id="REGISTRY_PASSWORD" value="CHANGE_ME"></div>
         <div class="field"><label>Docker Hub cache project <span class="k">DOCKERHUB_CACHE_PROJECT</span></label><input id="DOCKERHUB_CACHE_PROJECT" value="dockerhub"></div>
@@ -191,7 +196,7 @@
         <div class="field"><label>NFS server IP <span class="k">NFS_SERVER_IP</span></label><input id="NFS_SERVER_IP" value="CHANGE_ME"></div>
         <div class="field full"><label>Export path <span class="k">NFS_EXPORT_PATH</span></label><input id="NFS_EXPORT_PATH" value="/data/nkp-sources"></div>
       </div>
-      <p class="note" style="margin-top:8px">Bundle paths (CLI, konvoy, kommander, catalog) are derived from the mount point + version automatically.</p>
+      <p class="note" style="margin-top:8px">Bundle paths (CLI, konvoy, kommander, bootstrap) are derived from the mount point + version automatically — each version reads from its own <code>nkp-v&lt;ver&gt;/container-images/</code> tree.</p>
     </fieldset>
 
     <fieldset>
@@ -289,17 +294,21 @@ function model(){
   SIMPLE.forEach(k=>g[k]=val(k));
   g.AIRGAPPED = airgapped;
   const M = g.NKP_SOURCES_MOUNT || '/mnt/nkp-sources';
-  const V = g.NKP_VERSION || '2.17.0';
-  const host = g.REGISTRY_HOST || 'nkp-registry.local';
+  const V = g.NKP_VERSION || '2.17.1';
+  const host = g.REGISTRY_HOST || 'registry.emeagso2026.local';
+  // mirror project auto-derives from the version (2.17.1 -> nkp-2-17-1),
+  // overriding whatever is in the field, so it always matches NKP_VERSION.
+  g.REGISTRY_MIRROR_PROJECT = 'nkp-' + V.replace(/\./g,'-');
   // derived
   g.REGISTRY_URL          = `https://${host}`;
   g.REGISTRY_MIRROR_URL   = `https://${host}/${g.REGISTRY_MIRROR_PROJECT}`;
   g.DOCKERHUB_CACHE_URL   = `https://${host}/${g.DOCKERHUB_CACHE_PROJECT}`;
   g.REGISTRY_CACERT       = `${M}/certs/registry-ca-chain.crt`;
   g.NKP_CLI_BUNDLE        = `${M}/nkp_v${V}_linux_amd64.tar.gz`;
-  g.KONVOY_IMAGE_BUNDLE   = `${M}/konvoy-image-bundle-v${V}.tar`;
-  g.KOMMANDER_IMAGE_BUNDLE= `${M}/kommander-image-bundle-v${V}.tar`;
-  g.CATALOG_IMAGE_BUNDLE  = `${M}/nkp-catalog-applications-image-bundle-v${V}.tar`;
+  // real image bundles live inside the extracted air-gap tree, under container-images/
+  g.KONVOY_IMAGE_BUNDLE   = `${M}/nkp-v${V}/container-images/konvoy-image-bundle-v${V}.tar`;
+  g.KOMMANDER_IMAGE_BUNDLE= `${M}/nkp-v${V}/container-images/kommander-image-bundle-v${V}.tar`;
+  g.BOOTSTRAP_IMAGE       = `${M}/nkp-v${V}/konvoy-bootstrap-image-v${V}.tar`;
   g.PC_CA_CERT            = `${M}/certs/pc-ca.crt`;
   g.INGRESS_CA            = `${M}/certs/issuingca.crt`;
   g.INGRESS_CERT          = `${M}/certs/nkp-ingress.crt`;
@@ -315,7 +324,7 @@ function layout(g){
   const B = ()=>({t:'b'});
   const K = k=>({t:'k',k, v:g[k]});
   return [
-    S('NKP 2.17 '+ (g.NKP_LICENSE_TIER||'') +' — deployment environment'),
+    S('NKP '+(g.NKP_VERSION||'')+' '+ (g.NKP_LICENSE_TIER||'') +' — deployment environment'),
     C('lives on harbor: /data/nkp-sources/nkp-deploy.env'),
     C('bastion: set -a; source /mnt/nkp-sources/nkp-deploy.env; set +a'),
     B(),
@@ -330,7 +339,7 @@ function layout(g){
     B(),C('— docker hub proxy cache —'),
     K('DOCKERHUB_CACHE_PROJECT'),K('DOCKERHUB_CACHE_URL'),
     B(),C('— nkp source bundles (read from the nfs mount) —'),
-    K('NKP_CLI_BUNDLE'),K('KONVOY_IMAGE_BUNDLE'),K('KOMMANDER_IMAGE_BUNDLE'),K('CATALOG_IMAGE_BUNDLE'),
+    K('NKP_CLI_BUNDLE'),K('KONVOY_IMAGE_BUNDLE'),K('KOMMANDER_IMAGE_BUNDLE'),K('BOOTSTRAP_IMAGE'),
     B(),C('— prism central —'),
     K('NUTANIX_ENDPOINT'),K('NUTANIX_PORT'),K('NUTANIX_USER'),K('NUTANIX_PASSWORD'),
     K('NUTANIX_INSECURE'),K('PC_CA_CERT'),K('PRISM_ELEMENT_CLUSTER'),K('SUBNET_NAME'),
@@ -385,6 +394,19 @@ function render(){
 
 // wire all inputs
 [...SIMPLE].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input',render); });
+
+// version dropdown: on change, recompute the derived mirror project field, then render
+const verSel = $('NKP_VERSION');
+if (verSel) {
+  const syncProject = () => {
+    const V = verSel.value || '2.17.1';
+    const proj = 'nkp-' + V.replace(/\./g,'-');
+    const pf = $('REGISTRY_MIRROR_PROJECT'); if (pf) pf.value = proj;
+    render();
+  };
+  verSel.addEventListener('change', syncProject);
+  syncProject();   // initialize on load
+}
 
 // download
 $('dl').addEventListener('click',()=>{

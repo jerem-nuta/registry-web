@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NKP Deployment — Step by Step</title>
+<style>
+  :root{
+    --bg:#0b0e14;--panel:#111722;--panel2:#0e141d;--line:#1f2937;--line-bright:#2b3a52;
+    --ink:#e6edf3;--ink-dim:#8b98a9;--ink-faint:#5b6675;
+    --green:#5ee3a1;--green-dim:#2f7d59;--violet:#9d8cff;--amber:#f2b35e;--blue:#6cb6ff;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;--sans:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;
+    background-image:radial-gradient(900px 500px at 80% -10%,rgba(94,227,161,.06),transparent 60%);}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 24px 80px}
+  .back{display:inline-flex;align-items:center;gap:8px;color:var(--ink-dim);font-size:13px;
+    text-decoration:none;padding:7px 13px;border:1px solid var(--line);border-radius:9px;margin-bottom:22px}
+  .back:hover{color:var(--green);border-color:var(--green-dim)}
+  header h1{font-size:21px;letter-spacing:.03em;font-weight:600;margin-bottom:6px}
+  header .sub{color:var(--ink-dim);font-size:13.5px;line-height:1.6;margin-bottom:22px;max-width:680px}
+
+  .modes{display:flex;gap:10px;margin-bottom:8px}
+  .mode{flex:1;border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer;
+    background:var(--panel2);transition:.15s}
+  .mode:hover{border-color:var(--line-bright)}
+  .mode.active{border-color:var(--green-dim);background:linear-gradient(165deg,var(--panel),var(--panel2))}
+  .mode h3{font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .mode .dot{width:10px;height:10px;border-radius:3px;background:var(--ink-faint)}
+  .mode.active .dot{background:var(--green)}
+  .mode p{font-size:12px;color:var(--ink-dim);margin-top:4px}
+
+  .bar{display:flex;align-items:center;gap:12px;margin:18px 0 10px}
+  .bar .track{flex:1;height:7px;background:#0e141d;border:1px solid var(--line);border-radius:99px;overflow:hidden}
+  .bar .fill{height:100%;background:linear-gradient(90deg,var(--green-dim),var(--green));width:0;transition:width .3s}
+  .bar .pct{font-family:var(--mono);font-size:12px;color:var(--ink-dim);min-width:78px;text-align:right}
+  .bar .reset{font-size:12px;color:var(--ink-faint);text-decoration:none;border:1px solid var(--line);
+    padding:5px 10px;border-radius:7px;cursor:pointer}
+  .bar .reset:hover{color:var(--amber);border-color:var(--amber)}
+
+  .phase{margin-top:22px}
+  .phase-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .phase-h .pn{font-family:var(--mono);font-size:12px;color:var(--violet);border:1px solid var(--line);
+    border-radius:6px;padding:2px 7px}
+  .phase-h h2{font-size:15px;font-weight:600}
+
+  .step{display:flex;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;
+    margin-bottom:8px;background:var(--panel2);transition:.12s;align-items:flex-start}
+  .step:hover{border-color:var(--line-bright)}
+  .step.done{opacity:.55;background:#0c1118}
+  .step .chk{flex:none;width:22px;height:22px;border:1.5px solid var(--green-dim);border-radius:6px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:.12s}
+  .step.done .chk{background:var(--green-dim);border-color:var(--green-dim)}
+  .step .chk svg{width:13px;height:13px;stroke:#0b0e14;stroke-width:3;opacity:0}
+  .step.done .chk svg{opacity:1}
+  .step .body{flex:1}
+  .step .t{font-size:14px;font-weight:500}
+  .step.done .t{text-decoration:line-through;text-decoration-color:var(--ink-faint)}
+  .step .d{font-size:12.5px;color:var(--ink-dim);margin-top:3px;line-height:1.5}
+  .step pre{margin-top:7px;background:#0a0f17;border:1px solid var(--line);border-radius:8px;
+    padding:9px 11px;font-family:var(--mono);font-size:11.5px;color:#b8c4d4;overflow-x:auto;white-space:pre-wrap}
+  .step .warn{color:var(--amber);font-size:11.5px;margin-top:5px;display:flex;gap:6px}
+  .tag{font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:5px;border:1px solid var(--line);
+    color:var(--ink-faint);margin-left:6px}
+  .hidden{display:none}
+  footer{margin-top:36px;color:var(--ink-faint);font-family:var(--mono);font-size:11px;
+    border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="./index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to lab portal
+  </a>
+
+  <header>
+    <h1>NKP Deployment — Step by Step</h1>
+    <p class="sub">A checkable runbook for standing up an NKP cluster end to end. Pick your path — air-gapped or connected — and tick each step as you go. Progress is saved in this browser.</p>
+  </header>
+
+  <div class="modes">
+    <div class="mode active" data-mode="airgap">
+      <h3><span class="dot"></span>Air-gapped</h3>
+      <p>Offline. Mirror bundles to Harbor, pull from the internal registry.</p>
+    </div>
+    <div class="mode" data-mode="connected">
+      <h3><span class="dot"></span>Non air-gapped</h3>
+      <p>Connected. Pull through a registry mirror to avoid rate limits.</p>
+    </div>
+  </div>
+
+  <div class="bar">
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <span class="pct" id="pct">0 / 0</span>
+    <span class="reset" id="reset">reset</span>
+  </div>
+
+  <div id="steps"></div>
+
+  <footer>// emeagso2026 · NKP deploy runbook · progress stored locally in this browser</footer>
+</div>
+
+<script>
+// ---- step data. Each step: {t:title, d:desc, cmd?:code, warn?:string, tag?:string} ----
+const PHASES = {
+  airgap: [
+    { p:'Prep', steps:[
+      {t:'Harbor registry up + reachable', d:'registry.emeagso2026.local on :443 with all per-version projects (nkp-2-17-1, …). Browse the Harbor UI to confirm.', tag:'registry'},
+      {t:'Bastion has the NKP CLI', d:'nkp version shows v2.17.1 (konvoy/kommander/mindthegap present).', cmd:'nkp version'},
+      {t:'Bastion trusts the internal CA', d:'Install root+issuing CA into the OS trust store so Harbor + PC verify.', cmd:'sudo cp ca-chain.crt /etc/pki/ca-trust/source/anchors/emeagso2026-ca.crt\nsudo update-ca-trust extract'},
+      {t:'docker0 MTU = 1442', d:'Flow VPC overlay needs MTU 1442 or kind/Docker hangs during bootstrap.', cmd:'ip link show docker0 | grep -o "mtu [0-9]*"', warn:'If 1500, set 1442 in /etc/docker/daemon.json and restart docker.'},
+      {t:'NFS source mount works', d:'Bundles staged on Harbor are visible on the bastion via the NFS mount.', cmd:'ls /mnt/nkp-sources/nkp-v2.17.1/container-images/'},
+    ]},
+    { p:'Stage', steps:[
+      {t:'Download the air-gap bundle', d:'Use the Downloader page (paste the signed Nutanix link) or scp into /data/nkp-sources/nkp-v<ver>/.', tag:'downloader'},
+      {t:'Extract the bundle', d:'gunzip + tar so you get nkp-v<ver>/ with container-images/, image-artifacts/, konvoy-bootstrap-image.', cmd:'tar xzf nkp-air-gapped-bundle_v2.17.1_linux_amd64.tar.gz'},
+      {t:'Push konvoy images to Harbor', d:'Uncompressed .tar only. Goes into the version project.', cmd:'nkp push bundle --bundle nkp-v2.17.1/container-images/konvoy-image-bundle-v2.17.1.tar \\\n  --to-registry registry.emeagso2026.local/nkp-2-17-1 \\\n  --to-registry-username admin --to-registry-password Harbor12345 \\\n  --to-registry-ca-cert-file ca-chain.crt'},
+      {t:'Push kommander images to Harbor', d:'Required for Ultimate (the management plane).', cmd:'nkp push bundle --bundle nkp-v2.17.1/container-images/kommander-image-bundle-v2.17.1.tar \\\n  --to-registry registry.emeagso2026.local/nkp-2-17-1 \\\n  --to-registry-username admin --to-registry-password Harbor12345 \\\n  --to-registry-ca-cert-file ca-chain.crt'},
+      {t:'Load the bootstrap (kind) image', d:'docker load — NOT push. Used to create the local bootstrap cluster.', cmd:'docker load -i nkp-v2.17.1/konvoy-bootstrap-image-v2.17.1.tar'},
+    ]},
+    { p:'Configure', steps:[
+      {t:'Build the env file', d:'Use the Env Builder page (pick the version) or the per-version v<ver>/nkp.env. Mirror project auto-derives.', tag:'env-builder'},
+      {t:'Stage the certs', d:'In certs/: ca-chain.crt, pc-ca.crt, nkp-ingress.crt/.key, an SSH pubkey. Validate the PC chain.', cmd:'openssl s_client -connect pc-anna.emeagso2026.local:9440 -CAfile pc-ca.crt </dev/null 2>/dev/null | grep "Verify return code"', warn:'Must show: Verify return code: 0 (ok). Chain = SUBCA + ROOT.'},
+      {t:'Ingress cert SAN covers the dashboard FQDN', d:'nkp-ingress.crt SAN must include CLUSTER_HOSTNAME (nkp-prod.emeagso2026.local).', cmd:'openssl x509 -in nkp-ingress.crt -noout -ext subjectAltName'},
+      {t:'IP plan: LB range clear of nodes + API VIP', d:'MetalLB range must not overlap node IPs or the control-plane VIP. Reserve a clean block, exclude from DHCP.', warn:'This is what caused the dex/traefik crashloop — node grabbed a LB IP.'},
+    ]},
+    { p:'Deploy', steps:[
+      {t:'Run from a writable dir (~)', d:'NOT the read-only NFS mount — the bootstrap writes lock/config/kubeconfig files.', cmd:'cd ~ ; set -a; source ~/nkp.env; set +a'},
+      {t:'Create the cluster (air-gapped, self-managed)', d:'install.sh validates certs then runs nkp create cluster with --airgapped --self-managed and the registry mirror.', cmd:'./install.sh', tag:'~40 min'},
+      {t:'Cluster comes up', d:'3 CP + workers Ready; bootstrap pivots away.', cmd:'export KUBECONFIG=~/nkp-prod.conf\nkubectl get nodes -o wide'},
+    ]},
+    { p:'Finish', steps:[
+      {t:'DNS: dashboard FQDN → Traefik LB IP', d:'nkp-prod.emeagso2026.local must resolve to the Traefik LoadBalancer IP — NOT the API VIP.', cmd:'kubectl get svc -n kommander kommander-traefik -o jsonpath="{.status.loadBalancer.ingress[0].ip}"', warn:'Wrong target here = dex/traefik-forward-auth crashloop.'},
+      {t:'All Kommander apps green', d:'14/14 core apps installed (dex, traefik-forward-auth included).', cmd:'kubectl get apps -A'},
+      {t:'Grab the dashboard', d:'URL + credentials for the NKP console.', cmd:'nkp get dashboard --kubeconfig ~/nkp-prod.conf'},
+    ]},
+  ],
+  connected: [
+    { p:'Prep', steps:[
+      {t:'Registry mirror reachable', d:'Even connected, mirror through Harbor to dodge Docker Hub rate limits. Confirm the dockerhub proxy-cache project + version project exist.', tag:'registry'},
+      {t:'Bastion has the NKP CLI', d:'nkp version shows your target version.', cmd:'nkp version'},
+      {t:'Bastion trusts the internal CA', d:'So the mirror + PC verify over TLS.', cmd:'sudo cp ca-chain.crt /etc/pki/ca-trust/source/anchors/emeagso2026-ca.crt\nsudo update-ca-trust extract'},
+      {t:'docker0 MTU = 1442', d:'Flow VPC overlay — same requirement as air-gap.', cmd:'ip link show docker0 | grep -o "mtu [0-9]*"'},
+      {t:'Outbound to download.nutanix.com works', d:'Connected install can pull the bundle directly (or still use the Downloader page).', cmd:'curl -sI https://download.nutanix.com | head -1'},
+    ]},
+    { p:'Stage', steps:[
+      {t:'Download the nkp-bundle (or air-gap bundle)', d:'Connected installs still benefit from the air-gap bundle to avoid rate limits — push to the mirror. Use the Downloader page or scp.', tag:'downloader'},
+      {t:'Push images to the mirror', d:'Same push as air-gap — populates Harbor so every node pulls fast and consistently.', cmd:'nkp push bundle --bundle nkp-v2.17.1/container-images/konvoy-image-bundle-v2.17.1.tar \\\n  --to-registry registry.emeagso2026.local/nkp-2-17-1 \\\n  --to-registry-username admin --to-registry-password Harbor12345 \\\n  --to-registry-ca-cert-file ca-chain.crt'},
+      {t:'Load the bootstrap image', d:'docker load the konvoy-bootstrap image (faster + avoids a pull).', cmd:'docker load -i nkp-v2.17.1/konvoy-bootstrap-image-v2.17.1.tar'},
+    ]},
+    { p:'Configure', steps:[
+      {t:'Build the env file', d:'Env Builder page or v<ver>/nkp.env. Set AIRGAPPED=false; keep the registry mirror pointed at Harbor.', tag:'env-builder', warn:'Connected: AIRGAPPED=false, but still use the mirror URL to dodge rate limits.'},
+      {t:'Stage the certs', d:'Same as air-gap: ca-chain, pc-ca, ingress cert/key, ssh key. Validate the PC chain returns 0 (ok).', cmd:'openssl s_client -connect pc-anna.emeagso2026.local:9440 -CAfile pc-ca.crt </dev/null 2>/dev/null | grep "Verify return code"'},
+      {t:'IP plan: LB range clear of nodes + API VIP', d:'Same MetalLB rule as air-gap.', warn:'Reserve a clean LB block, exclude from DHCP.'},
+    ]},
+    { p:'Deploy', steps:[
+      {t:'Run from a writable dir (~)', d:'Source the env from your home dir.', cmd:'cd ~ ; set -a; source ~/nkp.env; set +a'},
+      {t:'Create the cluster (mirror, self-managed)', d:'No --airgapped flag; the registry mirror still serves images. install.sh validates then runs nkp create cluster.', cmd:'./install.sh', tag:'~40 min'},
+      {t:'Cluster comes up', d:'Nodes Ready; bootstrap pivots away.', cmd:'export KUBECONFIG=~/nkp-prod.conf\nkubectl get nodes -o wide'},
+    ]},
+    { p:'Finish', steps:[
+      {t:'DNS: dashboard FQDN → Traefik LB IP', d:'Same as air-gap — point the dashboard hostname at the ingress LB, not the API VIP.', cmd:'kubectl get svc -n kommander kommander-traefik -o jsonpath="{.status.loadBalancer.ingress[0].ip}"'},
+      {t:'All Kommander apps green', d:'14/14 core apps installed.', cmd:'kubectl get apps -A'},
+      {t:'Grab the dashboard', d:'Console URL + credentials.', cmd:'nkp get dashboard --kubeconfig ~/nkp-prod.conf'},
+    ]},
+  ],
+};
+
+let mode = 'airgap';
+const stepsEl = document.getElementById('steps');
+const fillEl = document.getElementById('fill');
+const pctEl = document.getElementById('pct');
+
+function keyFor(mode, pi, si){ return `nkp-step:${mode}:${pi}:${si}`; }
+// in-memory store (artifacts can't use localStorage); persists during the session
+const STORE = {};
+function isDone(mode,pi,si){ return !!STORE[keyFor(mode,pi,si)]; }
+function setDone(mode,pi,si,v){ STORE[keyFor(mode,pi,si)] = v; }
+
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function render(){
+  const phases = PHASES[mode];
+  let total=0, done=0, html='';
+  phases.forEach((ph,pi)=>{
+    html += `<div class="phase"><div class="phase-h"><span class="pn">${String(pi+1).padStart(2,'0')}</span><h2>${ph.p}</h2></div>`;
+    ph.steps.forEach((s,si)=>{
+      total++; const d = isDone(mode,pi,si); if(d) done++;
+      html += `<div class="step ${d?'done':''}" data-pi="${pi}" data-si="${si}">
+        <div class="chk"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5L20 7"/></svg></div>
+        <div class="body">
+          <div class="t">${esc(s.t)}${s.tag?`<span class="tag">${esc(s.tag)}</span>`:''}</div>
+          <div class="d">${esc(s.d)}</div>
+          ${s.cmd?`<pre>${esc(s.cmd)}</pre>`:''}
+          ${s.warn?`<div class="warn"><span>⚠</span><span>${esc(s.warn)}</span></div>`:''}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  stepsEl.innerHTML = html;
+  fillEl.style.width = total? (done/total*100)+'%' : '0';
+  pctEl.textContent = `${done} / ${total}`;
+  // wire checkboxes
+  stepsEl.querySelectorAll('.step').forEach(el=>{
+    el.querySelector('.chk').addEventListener('click',()=>{
+      const pi=+el.dataset.pi, si=+el.dataset.si;
+      setDone(mode,pi,si,!isDone(mode,pi,si));
+      render();
+    });
+  });
+}
+
+document.querySelectorAll('.mode').forEach(m=>{
+  m.addEventListener('click',()=>{
+    document.querySelectorAll('.mode').forEach(x=>x.classList.remove('active'));
+    m.classList.add('active');
+    mode = m.dataset.mode;
+    render();
+  });
+});
+document.getElementById('reset').addEventListener('click',()=>{
+  PHASES[mode].forEach((ph,pi)=>ph.steps.forEach((s,si)=>setDone(mode,pi,si,false)));
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

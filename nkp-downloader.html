@@ -73,6 +73,10 @@
 </style>
 </head>
 <body>
+<a href="./index.html" style="display:inline-flex;align-items:center;gap:8px;margin:18px 0 0 24px;color:#8b98a9;font-size:13px;text-decoration:none;padding:7px 13px;border:1px solid #1f2937;border-radius:9px">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+  Back to lab portal
+</a>
 <div class="wrap">
 
   <header>
@@ -83,7 +87,17 @@
         <div class="sub">paste the magic links · get the curl</div>
       </div>
     </div>
-    <p class="lede">Two slots for the two links you always need. Paste the Nutanix portal links (they're <code>signed &amp; expire</code>), copy the command, run it on Harbor. Lands in <code>/data/nkp-sources/</code>.</p>
+    <p class="lede">Two slots for the two links you always need. Paste the Nutanix portal links (they're <code>signed &amp; expire</code>), copy the command, run it on Harbor. Each version lands in its own folder under <code>/data/nkp-sources/nkp-v&lt;ver&gt;/</code>.</p>
+    <div style="margin-top:14px;display:flex;align-items:center;gap:10px">
+      <label style="font-size:13px;color:var(--ink-dim)">NKP version</label>
+      <select id="verSel" style="background:#0e141d;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:14px">
+        <option value="2.17.0">2.17.0</option>
+        <option value="2.17.1" selected>2.17.1</option>
+        <option value="2.18.0">2.18.0</option>
+        <option value="2.18.1">2.18.1</option>
+      </select>
+      <span style="font-size:12px;color:var(--ink-faint)">updates the link placeholders + destination folder</span>
+    </div>
   </header>
 
   <!-- SLOT 1: air-gap bundle -->
@@ -122,9 +136,27 @@
     <div class="btns hidden" id="btns2"><button class="btn primary" data-copy="2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
   </div>
 
+  <!-- SLOT 3: NKP bundle (non-airgap) -->
+  <div class="slot">
+    <div class="shead">
+      <span class="sico blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 8v8a2 2 0 01-1 1.7l-7 4a2 2 0 01-2 0l-7-4A2 2 0 013 16V8a2 2 0 011-1.7l7-4a2 2 0 012 0l7 4A2 2 0 0121 8z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/></svg></span>
+      <div class="htext"><h2>NKP bundle</h2><p>the standard (non-airgap) nkp bundle</p></div>
+      <span class="tag">~ multi-GB</span>
+    </div>
+    <label>Signed URL</label>
+    <textarea id="url3" placeholder="https://download.nutanix.com/downloads/nkp/v2.17.1/nkp-bundle_v2.17.1_linux_amd64.tar.gz?Expires=...&Signature=..."></textarea>
+    <div class="frow">
+      <div><label>Save as (auto-detected)</label><input id="name3" placeholder="auto from URL"></div>
+      <div><label>Destination</label><input id="dest3" value="/data/nkp-sources"></div>
+    </div>
+    <div class="meta" id="meta3"></div>
+    <pre class="cmd hidden" id="cmd3"></pre>
+    <div class="btns hidden" id="btns3"><button class="btn primary" data-copy="3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy</button></div>
+  </div>
+
   <!-- RUN BOTH -->
   <div class="runall hidden" id="runall">
-    <h2>Run both on Harbor</h2>
+    <h2>Run all on Harbor</h2>
     <pre class="cmd" id="cmdall" style="margin-top:0"></pre>
     <div class="btns"><button class="btn primary" id="copyall"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>Copy both</button></div>
   </div>
@@ -181,12 +213,33 @@ sudo restorecon <span class="g">-v</span> <span class="v">${esc(dest)}/${esc(fna
 function render(){
   const c1 = renderSlot(1);
   const c2 = renderSlot(2);
+  const c3 = renderSlot(3);
   const runall = $('runall');
-  if(c1 && c2){ $('cmdall').textContent = c1 + "\n\n" + c2; runall.classList.remove('hidden'); }
+  const cmds = [c1,c2,c3].filter(Boolean);
+  if(cmds.length >= 2){ $('cmdall').textContent = cmds.join("\n\n"); runall.classList.remove('hidden'); }
   else { runall.classList.add('hidden'); }
 }
 
-['url1','name1','dest1','url2','name2','dest2'].forEach(id=>$(id).addEventListener('input',render));
+['url1','name1','dest1','url2','name2','dest2','url3','name3','dest3'].forEach(id=>$(id).addEventListener('input',render));
+
+// version selector: update placeholder URLs + per-version destination folder
+const verSel = $('verSel');
+function applyVersion(){
+  const V = verSel.value;
+  const dest = `/data/nkp-sources/nkp-v${V}`;
+  // air-gap bundle slot
+  $('url1').placeholder = `https://download.nutanix.com/downloads/nkp/v${V}/nkp-air-gapped-bundle_v${V}_linux_amd64.tar.gz?Expires=...&Signature=...`;
+  // CLI slot
+  $('url2').placeholder = `https://download.nutanix.com/downloads/nkp/v${V}/nkp_v${V}_linux_amd64.tar.gz?Expires=...&Signature=...`;
+  // NKP bundle (non-airgap) slot
+  $('url3').placeholder = `https://download.nutanix.com/downloads/nkp/v${V}/nkp-bundle_v${V}_linux_amd64.tar.gz?Expires=...&Signature=...`;
+  // destinations land in the version's own folder
+  $('dest1').value = dest;
+  $('dest2').value = dest;
+  $('dest3').value = dest;
+  render();
+}
+if (verSel){ verSel.addEventListener('change', applyVersion); applyVersion(); }
 
 document.querySelectorAll('[data-copy]').forEach(b=>{
   b.addEventListener('click',()=>{
