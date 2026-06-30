@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NKP Downloader — Live</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+  :root{--bg:#0b0e14;--panel:#111722;--panel-2:#0e141d;--line:#1f2937;--line-bright:#2b3a52;--ink:#e6edf3;--ink-dim:#8b98a9;--ink-faint:#5b6675;--accent:#5ee3a1;--accent-dim:#2f7d59;--violet:#9d8cff;--amber:#f2b765;--red:#f2776b;--mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;-webkit-font-smoothing:antialiased;background-image:radial-gradient(900px 500px at 85% -10%,rgba(94,227,161,.06),transparent 60%),radial-gradient(700px 400px at -10% 110%,rgba(157,140,255,.05),transparent 60%)}
+  .wrap{max-width:760px;margin:0 auto;padding:0 24px 80px}
+  header{padding:46px 0 24px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+  h1{font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .tagline{margin-top:10px;color:var(--ink-dim);font-size:14px}
+  .tagline code{font-family:var(--mono);color:var(--accent);font-size:12.5px}
+  .slot{background:linear-gradient(165deg,var(--panel),var(--panel-2));border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin-top:22px}
+  label{font-size:12px;color:var(--ink-dim);font-weight:500;display:block;margin-bottom:6px}
+  textarea{width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:var(--mono);font-size:12.5px;padding:11px 13px;min-height:88px;resize:vertical;line-height:1.5;word-break:break-all}
+  textarea:focus{outline:none;border-color:var(--accent-dim);box-shadow:0 0 0 3px rgba(94,227,161,.10)}
+  .meta{margin-top:12px;display:flex;flex-wrap:wrap;gap:8px}
+  .pill{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:16px;padding:4px 11px;color:var(--ink-dim);display:inline-flex;align-items:center;gap:6px}
+  .pill b{color:var(--accent)}.pill.bad b{color:var(--red)}.pill .d{width:6px;height:6px;border-radius:50%;background:var(--accent)}.pill.bad .d{background:var(--red)}
+  .btn{font-family:var(--sans);font-weight:600;font-size:13.5px;padding:11px 20px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#06231a;cursor:pointer;transition:.15s;margin-top:16px;display:inline-flex;align-items:center;gap:8px}
+  .btn:hover{background:#73ecb1}.btn:disabled{opacity:.5;cursor:not-allowed}
+  .prog{margin-top:20px;display:none}
+  .prog.show{display:block}
+  .bar{height:10px;background:#0c141b;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent-dim),var(--accent));transition:width .3s}
+  .stat{margin-top:9px;font-family:var(--mono);font-size:12px;color:var(--ink-dim);display:flex;justify-content:space-between}
+  .stat .ok{color:var(--accent)}.stat .err{color:var(--red)}
+  .note{margin-top:22px;font-size:12.5px;color:var(--ink-dim);line-height:1.6;border-left:2px solid var(--line-bright);padding-left:14px}
+  .note code{font-family:var(--mono);font-size:12px;color:var(--accent)}
+  footer{margin-top:30px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink-faint);font-family:var(--mono);font-size:11px}
+  .qjob{border:1px solid var(--line);border-radius:10px;padding:13px 14px;margin-top:10px;background:var(--panel-2)}
+  .qhead{display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap}
+  .qname{font-family:var(--mono);font-size:12.5px;color:var(--ink);word-break:break-all;flex:1;min-width:140px}
+  .qver{font-family:var(--mono);font-size:10.5px;color:var(--violet);border:1px solid rgba(157,140,255,.25);border-radius:5px;padding:1px 7px}
+  .qright{font-family:var(--mono);font-size:11.5px;color:var(--ink-dim);white-space:nowrap}
+  .qright.ok{color:var(--accent)}.qright.err{color:var(--red)}
+  .qact{margin-top:9px;display:flex;gap:14px}
+  .lnk{background:none;border:none;color:var(--ink-dim);font-family:var(--sans);font-size:12px;cursor:pointer;padding:0}
+  .lnk:hover{color:var(--accent)}.lnk.push{color:var(--accent);font-weight:600}
+  .pushcmd{margin-top:10px;font-family:var(--mono);font-size:11.5px;background:#0a0f17;border:1px solid var(--line);border-radius:8px;padding:10px 12px;color:#cfe6da;white-space:pre-wrap;overflow-x:auto;line-height:1.5}
+</style></head>
+<body><div class="wrap">
+  <header>
+    <div class="eyebrow">live downloader · server-side</div>
+    <h1>NKP Downloader</h1>
+    <p class="tagline">Pick a target version, paste a <code>download.nutanix.com</code> signed link, enqueue. Downloads run one at a time straight onto Harbor in the version folder. The URL clears after each enqueue so you can stack the next one.</p>
+  </header>
+
+  <div class="slot">
+    <label>Target NKP version <span style="color:var(--ink-faint)">— file lands in /data/nkp-sources/nkp-v&lt;ver&gt;/ (created if missing)</span></label>
+    <select id="ver" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:var(--mono);font-size:13px;padding:10px 12px;margin-bottom:14px">
+      <option value="2.17.0">2.17.0 → nkp-v2.17.0</option>
+      <option value="2.17.1" selected>2.17.1 → nkp-v2.17.1</option>
+      <option value="2.18.0">2.18.0 → nkp-v2.18.0</option>
+      <option value="2.18.1">2.18.1 → nkp-v2.18.1</option>
+    </select>
+    <label>Signed URL <span style="color:var(--ink-faint)">— paste, hit enqueue, the field clears for the next one</span></label>
+    <textarea id="url" placeholder="https://download.nutanix.com/downloads/nkp/v2.17.1/...tar.gz?Expires=...&Signature=..."></textarea>
+    <div class="meta" id="meta"></div>
+    <button class="btn" id="go">↓ Enqueue download</button>
+  </div>
+
+  <div class="slot" id="queueSlot" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <label style="margin:0">Download queue <span style="color:var(--ink-faint)" id="qcount"></span></label>
+      <button id="clearDone" style="background:none;border:1px solid var(--line);color:var(--ink-dim);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer">clear finished</button>
+    </div>
+    <div id="queue"></div>
+  </div>
+
+  <div class="note">
+    Downloads run <b style="color:var(--accent)">one at a time</b> (sequential queue). Only
+    <code>https://download.nutanix.com/</code> links are accepted. Each file lands in its version
+    folder under <code>/data/nkp-sources/</code> — the bastion sees them over NFS at
+    <code>/mnt/nkp-sources/</code>. After a file finishes, use its <b style="color:var(--accent)">push</b>
+    button for the exact <code>nkp push bundle</code> command (image bundles only).
+  </div>
+  <footer>// runs on Harbor · sequential queue · downloads server-side · same auth as the file server</footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+function parseName(u){try{return decodeURIComponent(new URL(u.trim()).pathname.split('/').filter(Boolean).pop()||'')}catch{return''}}
+function fmt(b){if(!b)return'?';const u=['B','KB','MB','GB'];let i=0;while(b>=1024&&i<3){b/=1024;i++}return b.toFixed(1)+u[i]}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+
+// is this an image bundle (pushable) vs a plain file?
+function isBundle(name){return /(konvoy|kommander)-image-bundle.*\.tar$/.test(name)}
+
+function pushCmd(file, version){
+  const proj = 'nkp-' + version.replace(/\./g,'-');
+  return `nkp push bundle --bundle /mnt/nkp-sources/nkp-v${version}/${file} \\\n`
+    + `  --to-registry registry.emeagso2026.local/${proj} \\\n`
+    + `  --to-registry-username admin --to-registry-password Harbor12345 \\\n`
+    + `  --to-registry-ca-cert-file /mnt/nkp-sources/certs/ca-chain.crt`;
+}
+
+// ---- enqueue ----
+$('go').addEventListener('click', async () => {
+  const url = $('url').value.trim();
+  const version = $('ver').value;
+  if(!/^https:\/\/download\.nutanix\.com\//.test(url)){ alert('Only download.nutanix.com links are allowed'); return; }
+  $('go').disabled = true;
+  try{
+    const r = await fetch('/download',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url, version})});
+    const j = await r.json();
+    if(j.error){ alert(j.error); }
+    else { $('url').value=''; $('meta').innerHTML=''; }   // CLEAR the field for the next paste
+  }catch(e){ alert('request failed'); }
+  $('go').disabled = false;
+  poll();   // refresh the queue immediately
+});
+
+// live URL meta (filename preview)
+$('url').addEventListener('input', ()=>{
+  const u=$('url').value.trim(); const n=parseName(u);
+  $('meta').innerHTML = n ? `<span class="pill"><span class="d"></span>file: <b>${esc(n)}</b></span>` : '';
+});
+
+// ---- cancel / clear ----
+async function cancel(job){ await fetch('/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({job})}); poll(); }
+$('clearDone').addEventListener('click', async ()=>{ await fetch('/clear',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({})}); poll(); });
+
+// ---- render the queue ----
+function jobRow(j){
+  const pct = j.total ? Math.round(j.done/j.total*100) : 0;
+  const ver = j.version || '';
+  let right='', barpct=pct, statusCls='';
+  if(j.status==='queued'){ right = `#${j.queue_pos} in queue`; barpct=0; }
+  else if(j.status==='running'){ right = `${pct}% · ${fmt(j.done)}/${fmt(j.total)}`; }
+  else if(j.status==='done'){ right = `done · ${fmt(j.done)}`; statusCls='ok'; barpct=100; }
+  else if(j.status==='error'){ right = 'error: '+esc(j.error||''); statusCls='err'; barpct=0; }
+  else if(j.status==='canceled'){ right = 'canceled'; statusCls='err'; barpct=0; }
+
+  const canCancel = (j.status==='queued'||j.status==='running');
+  const canPush = (j.status==='done' && isBundle(j.file) && ver);
+  return `<div class="qjob">
+    <div class="qhead">
+      <span class="qname">${esc(j.file)}</span>
+      <span class="qver">v${esc(ver||'?')}</span>
+      <span class="qright ${statusCls}">${right}</span>
+    </div>
+    <div class="bar"><i style="width:${barpct}%"></i></div>
+    <div class="qact">
+      ${canCancel?`<button class="lnk" onclick="cancel('${j.job}')">cancel</button>`:''}
+      ${canPush?`<button class="lnk push" data-push="${j.job}">push to Harbor →</button>`:''}
+    </div>
+    ${canPush?`<pre class="pushcmd" id="pc-${j.job}" style="display:none"></pre>`:''}
+  </div>`;
+}
+
+let JOBS=[];
+function render(){
+  const slot=$('queueSlot');
+  if(!JOBS.length){ slot.style.display='none'; return; }
+  slot.style.display='block';
+  const running=JOBS.filter(j=>j.status==='running').length;
+  const queued=JOBS.filter(j=>j.status==='queued').length;
+  $('qcount').textContent = `· ${running} running, ${queued} queued, ${JOBS.length} total`;
+  $('queue').innerHTML = JOBS.map(jobRow).join('');
+  // wire push buttons (toggle the command, with a copy)
+  document.querySelectorAll('[data-push]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const job=JOBS.find(x=>x.job===b.dataset.push); if(!job)return;
+      const pre=$('pc-'+job.job);
+      if(pre.style.display==='none'){
+        pre.textContent = pushCmd(job.file, job.version);
+        pre.style.display='block';
+        b.textContent='copy command';
+      } else {
+        navigator.clipboard.writeText(pre.textContent).then(()=>{b.textContent='copied ✓';setTimeout(()=>b.textContent='copy command',1200)});
+      }
+    });
+  });
+}
+
+async function poll(){
+  try{
+    const r=await fetch('/jobs'); const d=await r.json();
+    JOBS=d.jobs||[]; render();
+  }catch(e){}
+}
+setInterval(poll, 800);
+poll();
+</script>
+</body></html>
