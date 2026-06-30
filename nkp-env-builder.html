@@ -168,7 +168,7 @@
       <div class="sec-head"><span class="sec-num">01</span><h2>Versions &amp; Tier</h2><span class="hint">what you're deploying</span></div>
       <div class="grid">
         <div class="field"><label>NKP version <span class="k">NKP_VERSION</span></label>
-          <select id="NKP_VERSION"><option value="2.17.0">2.17.0</option><option value="2.17.1" selected>2.17.1</option><option value="2.18.0">2.18.0</option><option value="2.18.1">2.18.1</option></select></div>
+          <select id="NKP_VERSION"></select></div>
         <div class="field"><label>License tier <span class="k">NKP_LICENSE_TIER</span></label>
           <select id="NKP_LICENSE_TIER"><option value="pro" selected>pro</option><option value="ultimate">ultimate</option><option value="starter">starter</option></select></div>
         <div class="field"><label>Kubernetes version <span class="k">KUBERNETES_VERSION</span></label><input id="KUBERNETES_VERSION" value="1.31.4"></div>
@@ -397,16 +397,38 @@ function render(){
 
 // version dropdown: on change, recompute the derived mirror project field, then render
 const verSel = $('NKP_VERSION');
-if (verSel) {
-  const syncProject = () => {
-    const V = verSel.value || '2.17.1';
-    const proj = 'nkp-' + V.replace(/\./g,'-');
-    const pf = $('REGISTRY_MIRROR_PROJECT'); if (pf) pf.value = proj;
-    render();
-  };
-  verSel.addEventListener('change', syncProject);
-  syncProject();   // initialize on load
+let VERSIONS = [];   // [{version, k8s, default}]
+
+function syncProject(){
+  const V = verSel.value || '2.17.1';
+  const proj = 'nkp-' + V.replace(/\./g,'-');
+  const pf = $('REGISTRY_MIRROR_PROJECT'); if (pf) pf.value = proj;
+  // auto-fill the K8s version field from the version map (if we have it + the field exists)
+  const meta = VERSIONS.find(x=>x.version===V);
+  const kf = $('KUBERNETES_VERSION');
+  if (meta && meta.k8s && kf) kf.value = meta.k8s;
+  render();
 }
+
+// load the central version list; fall back to a built-in list if the file is missing
+async function loadVersions(){
+  let list = null;
+  try {
+    const r = await fetch('./versions.json', {cache:'no-store'});
+    if (r.ok){ const d = await r.json(); list = d.versions; }
+  } catch(e){}
+  if (!list || !list.length){
+    list = [{version:'2.17.0',k8s:'1.34.3'},{version:'2.17.1',k8s:'1.34.3',default:true},
+            {version:'2.18.0',k8s:'1.35.0'},{version:'2.18.1',k8s:'1.35.0'}];
+  }
+  VERSIONS = list;
+  if (verSel){
+    verSel.innerHTML = list.map(v =>
+      `<option value="${v.version}"${v.default?' selected':''}>${v.version}</option>`).join('');
+  }
+  if (verSel){ verSel.addEventListener('change', syncProject); syncProject(); }
+}
+loadVersions();
 
 // download
 $('dl').addEventListener('click',()=>{

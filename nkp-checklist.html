@@ -93,6 +93,12 @@
     <button id="m-non" aria-pressed="false" onclick="setMode('non')">Non air-gapped<span class="d">cluster has outbound to the mirror</span></button>
   </div>
 
+  <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+    <label style="font-size:13px;color:var(--ink-dim)">NKP version</label>
+    <select id="verSel" style="background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 11px;font-size:14px;font-family:var(--mono)"></select>
+    <span style="font-size:12px;color:var(--ink-mute)">rewrites the version in every command below</span>
+  </div>
+
   <div class="progress">
     <div class="bar"><i id="fill"></i></div>
     <span class="pct" id="pct">0%</span>
@@ -161,6 +167,28 @@ try { done = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ done = {
 function stepId(pi, si){ return PHASES[pi].n + '-' + si; }
 function visible(step){ return step.m === 'both' || step.m === mode; }
 
+// version rewriting: commands are authored against 2.17.1; swap to the picked version.
+let VERSION = '2.17.1';
+const BASE = '2.17.1';
+function verize(s){
+  if (VERSION === BASE) return s;
+  const proj = 'nkp-' + VERSION.replace(/\./g,'-');
+  const baseProj = 'nkp-' + BASE.replace(/\./g,'-');
+  return s.split(baseProj).join(proj)          // nkp-2-17-1 -> nkp-2-18-0
+          .split('v'+BASE).join('v'+VERSION)    // v2.17.1 -> v2.18.0 (paths, filenames)
+          .split(BASE).join(VERSION);           // bare 2.17.1 -> 2.18.0
+}
+
+async function loadVersions(){
+  let list=null;
+  try{ const r=await fetch('./versions.json',{cache:'no-store'}); if(r.ok) list=(await r.json()).versions; }catch(e){}
+  if(!list||!list.length) list=[{version:'2.17.0'},{version:'2.17.1',default:true},{version:'2.18.0'},{version:'2.18.1'}];
+  const sel=document.getElementById('verSel');
+  sel.innerHTML=list.map(v=>`<option value="${v.version}"${v.default?' selected':''}>${v.version}</option>`).join('');
+  VERSION = (list.find(v=>v.default)||list[0]).version;
+  sel.addEventListener('change', ()=>{ VERSION=sel.value; render(); });
+}
+
 function render(){
   const root = document.getElementById('phases');
   root.innerHTML = '';
@@ -177,7 +205,8 @@ function render(){
       const isC = !!done[id];
       total++; if (isC){ checked++; phDone++; }
       const tag = st.tag ? `<span class="tag ${st.tag}">${st.tag==='air'?'air-gap':'non-airgap'}</span>` : '';
-      const code = st.c ? `<div class="c"><button class="cp" data-c="${encodeURIComponent(st.c)}">copy</button>${st.c.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>` : '';
+      const cmd = st.c ? verize(st.c) : '';
+      const code = cmd ? `<div class="c"><button class="cp" data-c="${encodeURIComponent(cmd)}">copy</button>${cmd.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>` : '';
       const note = st.note ? `<div class="note">⚠ ${st.note}</div>` : '';
       return `<label class="step ${isC?'checked':''}">
         <input type="checkbox" data-id="${id}" ${isC?'checked':''}>
@@ -232,7 +261,7 @@ function toast(msg){
   t.textContent = msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 1400);
 }
-render();
+loadVersions().then(render);
 </script>
 </body>
 </html>

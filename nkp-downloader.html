@@ -91,10 +91,6 @@
     <div style="margin-top:14px;display:flex;align-items:center;gap:10px">
       <label style="font-size:13px;color:var(--ink-dim)">NKP version</label>
       <select id="verSel" style="background:#0e141d;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:14px">
-        <option value="2.17.0">2.17.0</option>
-        <option value="2.17.1" selected>2.17.1</option>
-        <option value="2.18.0">2.18.0</option>
-        <option value="2.18.1">2.18.1</option>
       </select>
       <span style="font-size:12px;color:var(--ink-faint)">updates the link placeholders + destination folder</span>
     </div>
@@ -239,7 +235,15 @@ function applyVersion(){
   $('dest3').value = dest;
   render();
 }
-if (verSel){ verSel.addEventListener('change', applyVersion); applyVersion(); }
+if (verSel){ verSel.addEventListener('change', applyVersion);
+  (async function(){
+    let list=null;
+    try{ const r=await fetch('./versions.json',{cache:'no-store'}); if(r.ok) list=(await r.json()).versions; }catch(e){}
+    if(!list||!list.length) list=[{version:'2.17.0'},{version:'2.17.1',default:true},{version:'2.18.0'},{version:'2.18.1'}];
+    verSel.innerHTML=list.map(v=>`<option value="${v.version}"${v.default?' selected':''}>${v.version}</option>`).join('');
+    applyVersion();
+  })();
+}
 
 document.querySelectorAll('[data-copy]').forEach(b=>{
   b.addEventListener('click',()=>{

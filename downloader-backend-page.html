@@ -52,10 +52,6 @@
   <div class="slot">
     <label>Target NKP version <span style="color:var(--ink-faint)">— file lands in /data/nkp-sources/nkp-v&lt;ver&gt;/ (created if missing)</span></label>
     <select id="ver" style="width:100%;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;color:var(--ink);font-family:var(--mono);font-size:13px;padding:10px 12px;margin-bottom:14px">
-      <option value="2.17.0">2.17.0 → nkp-v2.17.0</option>
-      <option value="2.17.1" selected>2.17.1 → nkp-v2.17.1</option>
-      <option value="2.18.0">2.18.0 → nkp-v2.18.0</option>
-      <option value="2.18.1">2.18.1 → nkp-v2.18.1</option>
     </select>
     <label>Signed URL <span style="color:var(--ink-faint)">— paste, hit enqueue, the field clears for the next one</span></label>
     <textarea id="url" placeholder="https://download.nutanix.com/downloads/nkp/v2.17.1/...tar.gz?Expires=...&Signature=..."></textarea>
@@ -83,6 +79,18 @@
 
 <script>
 const $=id=>document.getElementById(id);
+
+// load the central version list to populate the target-version dropdown
+(async function loadVersions(){
+  let list=null;
+  try{ const r=await fetch('/files/versions.json',{cache:'no-store'});
+       if(r.ok){ list=(await r.json()).versions; } }catch(e){}
+  if(!list||!list.length){
+    list=[{version:'2.17.0'},{version:'2.17.1',default:true},{version:'2.18.0'},{version:'2.18.1'}];
+  }
+  const sel=$('ver');
+  sel.innerHTML=list.map(v=>`<option value="${v.version}"${v.default?' selected':''}>${v.version} → nkp-v${v.version}</option>`).join('');
+})();
 function parseName(u){try{return decodeURIComponent(new URL(u.trim()).pathname.split('/').filter(Boolean).pop()||'')}catch{return''}}
 function fmt(b){if(!b)return'?';const u=['B','KB','MB','GB'];let i=0;while(b>=1024&&i<3){b/=1024;i++}return b.toFixed(1)+u[i]}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
