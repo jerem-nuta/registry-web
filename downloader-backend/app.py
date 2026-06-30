@@ -9,7 +9,7 @@ Security:
 - Filename is derived from the URL path only (no traversal).
 - Basic-auth gate (same creds as the file server).
 """
-import os, re, threading, uuid, base64
+import os, re, threading, uuid, base64, time
 from urllib.parse import urlparse, unquote
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -21,13 +21,16 @@ USER = os.environ.get("NKP_DL_USER", "nkpfiles")
 PASS = os.environ.get("NKP_DL_PASS", "changeme")
 ALLOW_HOST = "download.nutanix.com"
 
-# job registry: id -> {file, total, done, status, error}
+# job registry: id -> {file, version, dest, total, done, status, error, queued, started, ended}
+#   status: queued | running | done | error | canceled
 JOBS = {}
+QUEUE = []                      # list of job_ids waiting to run, in order
+QLOCK = threading.Lock()        # guards JOBS + QUEUE
+_WORKER_STARTED = False
 
 def safe_name(url):
     path = urlparse(url).path
     name = unquote(path.rsplit("/", 1)[-1])
-    # strip anything that isn't a sane filename char
     name = re.sub(r"[^A-Za-z0-9._-]", "", name)
     return name or "download.bin"
 
@@ -38,27 +41,86 @@ def allowed(url):
     except Exception:
         return False
 
-def download(job_id, url):
+def version_dest(version):
+    """Resolve (and create) the destination folder for a given NKP version.
+       version '' or None -> the base DEST. '2.17.1' -> DEST/nkp-v2.17.1/."""
+    if not version:
+        d = DEST
+    else:
+        v = re.sub(r"[^0-9.]", "", str(version))     # sanitize: digits + dots only
+        d = os.path.join(DEST, f"nkp-v{v}") if v else DEST
+    os.makedirs(d, exist_ok=True)                     # auto-create if missing
+    os.system(f"restorecon -d {d!r} 2>/dev/null || true")
+    return d
+
+def download(job_id):
     job = JOBS[job_id]
+    url = job["url"]
     try:
-        dest_path = os.path.join(DEST, job["file"])
+        job["status"] = "running"
+        job["started"] = time.time()
+        dest_dir = version_dest(job.get("version"))
+        job["dest"] = dest_dir
+        dest_path = os.path.join(dest_dir, job["file"])
         req = urllib.request.Request(url, headers={"User-Agent": "nkp-downloader"})
         with urllib.request.urlopen(req) as r:
-            total = int(r.headers.get("Content-Length", 0))
-            job["total"] = total
+            job["total"] = int(r.headers.get("Content-Length", 0))
             with open(dest_path, "wb") as f:
                 while True:
+                    if job.get("cancel"):
+                        raise RuntimeError("canceled by user")
                     chunk = r.read(1024 * 256)
                     if not chunk:
                         break
                     f.write(chunk)
                     job["done"] += len(chunk)
-        # best-effort SELinux relabel (ignored if not enforcing)
         os.system(f"restorecon -v {dest_path!r} 2>/dev/null || true")
         job["status"] = "done"
+        job["path"] = dest_path
     except Exception as e:
-        job["status"] = "error"
-        job["error"] = str(e)
+        job["status"] = "canceled" if job.get("cancel") else "error"
+        job["error"] = "" if job.get("cancel") else str(e)
+    finally:
+        job["ended"] = time.time()
+
+def _worker():
+    """Single sequential worker: pulls one job at a time off QUEUE and runs it."""
+    while True:
+        jid = None
+        with QLOCK:
+            if QUEUE:
+                jid = QUEUE.pop(0)
+        if jid is None:
+            time.sleep(0.4)
+            continue
+        job = JOBS.get(jid)
+        if not job or job.get("cancel"):
+            if job and job.get("cancel"):
+                job["status"] = "canceled"; job["ended"] = time.time()
+            continue
+        download(jid)            # blocks until this one finishes, then loops
+
+def ensure_worker():
+    global _WORKER_STARTED
+    if not _WORKER_STARTED:
+        _WORKER_STARTED = True
+        threading.Thread(target=_worker, daemon=True).start()
+
+def enqueue(url, version):
+    jid = uuid.uuid4().hex[:12]
+    JOBS[jid] = {
+        "job": jid, "url": url, "file": safe_name(url), "version": version or "",
+        "dest": "", "total": 0, "done": 0, "status": "queued", "error": "",
+        "queued": time.time(), "started": 0, "ended": 0, "cancel": False,
+    }
+    with QLOCK:
+        QUEUE.append(jid)
+    ensure_worker()
+    return jid
+
+def queue_position(jid):
+    with QLOCK:
+        return QUEUE.index(jid) + 1 if jid in QUEUE else 0
 
 
 # --- Prism Central v4 list helper (namespace-aware) ---
@@ -167,7 +229,19 @@ class H(BaseHTTPRequestHandler):
             job = JOBS.get(jid)
             if not job:
                 self.send_response(404); self.end_headers(); return
-            self._json(job)
+            out = dict(job); out["queue_pos"] = queue_position(jid)
+            self._json(out)
+        elif self.path == "/jobs":
+            # all jobs, queue first (by queue order) then running/recent by time
+            out = []
+            for jid, j in JOBS.items():
+                e = dict(j); e["queue_pos"] = queue_position(jid); out.append(e)
+            # sort: running first, then queued by position, then finished by ended desc
+            rank = {"running": 0, "queued": 1, "done": 2, "error": 2, "canceled": 2}
+            out.sort(key=lambda e: (rank.get(e["status"], 3),
+                                    e["queue_pos"] or 0,
+                                    -(e.get("ended") or e.get("queued") or 0)))
+            self._json({"jobs": out})
         else:
             self.send_response(404); self.end_headers()
 
@@ -202,20 +276,41 @@ class H(BaseHTTPRequestHandler):
                 return self._json({"error": f"could not reach PC: {e}"}, 502)
         if not self._auth_ok():
             return self._need_auth()
-        if self.path != "/download":
-            self.send_response(404); self.end_headers(); return
         length = int(self.headers.get("Content-Length", 0))
         try:
             data = json.loads(self.rfile.read(length) or b"{}")
         except Exception:
             return self._json({"error": "bad json"}, 400)
-        url = (data.get("url") or "").strip()
-        if not allowed(url):
-            return self._json({"error": "only https://download.nutanix.com/ URLs are allowed"}, 400)
-        jid = uuid.uuid4().hex[:12]
-        JOBS[jid] = {"file": safe_name(url), "total": 0, "done": 0, "status": "running", "error": ""}
-        threading.Thread(target=download, args=(jid, url), daemon=True).start()
-        self._json({"job": jid, "file": JOBS[jid]["file"]})
+
+        if self.path == "/download":
+            url = (data.get("url") or "").strip()
+            version = (data.get("version") or "").strip()
+            if not allowed(url):
+                return self._json({"error": "only https://download.nutanix.com/ URLs are allowed"}, 400)
+            jid = enqueue(url, version)
+            j = JOBS[jid]
+            return self._json({"job": jid, "file": j["file"], "version": version,
+                               "queue_pos": queue_position(jid)})
+
+        if self.path == "/cancel":
+            jid = (data.get("job") or "").strip()
+            job = JOBS.get(jid)
+            if not job:
+                return self._json({"error": "no such job"}, 404)
+            job["cancel"] = True
+            with QLOCK:
+                if jid in QUEUE:           # not started yet -> drop from queue immediately
+                    QUEUE.remove(jid); job["status"] = "canceled"; job["ended"] = time.time()
+            return self._json({"job": jid, "status": job["status"]})
+
+        if self.path == "/clear":
+            # remove finished/canceled/errored jobs from the list (does not touch files)
+            drop = [jid for jid, j in JOBS.items() if j["status"] in ("done", "error", "canceled")]
+            for jid in drop:
+                JOBS.pop(jid, None)
+            return self._json({"cleared": len(drop)})
+
+        self.send_response(404); self.end_headers()
 
     def _cors(self):
         self.send_header("Access-Control-Allow-Origin", "*")
