@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NKP Deploy — Step-by-Step Checklist</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#111722; --panel2:#0e141d; --line:#1f2937; --line2:#2b3a52;
+    --ink:#e6edf3; --ink-dim:#8b98a9; --ink-mute:#5b6675;
+    --green:#5ee3a1; --green-dim:#2f7d59; --blue:#6cb6ff; --violet:#9d8cff; --amber:#f2b35e;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace; --sans:'Inter',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;
+    background-image:radial-gradient(900px 500px at 80% -10%,rgba(94,227,161,.05),transparent 60%);}
+  .wrap{max-width:920px;margin:0 auto;padding:30px 22px 80px}
+  .back{display:inline-flex;align-items:center;gap:7px;color:var(--ink-dim);font-size:13px;
+    text-decoration:none;margin-bottom:18px;padding:7px 13px;border:1px solid var(--line);border-radius:8px}
+  .back:hover{color:var(--green);border-color:var(--green-dim)}
+  header{display:flex;align-items:baseline;gap:14px;margin-bottom:6px}
+  header .n{font-family:var(--mono);font-size:13px;color:var(--violet);font-weight:600}
+  header h1{font-size:21px;letter-spacing:.03em;font-weight:600}
+  header .line{flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+  .sub{color:var(--ink-dim);font-size:13.5px;margin:0 0 22px;line-height:1.6}
+
+  .modes{display:flex;gap:10px;margin-bottom:8px}
+  .modes button{flex:1;background:var(--panel2);color:var(--ink-dim);border:1px solid var(--line);
+    border-radius:10px;padding:13px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+  .modes button[aria-pressed="true"]{background:rgba(94,227,161,.08);color:var(--green);border-color:var(--green-dim)}
+  .modes button .d{display:block;font-weight:400;font-size:11.5px;color:var(--ink-mute);margin-top:3px}
+
+  .progress{display:flex;align-items:center;gap:12px;margin:16px 0 22px}
+  .bar{flex:1;height:7px;background:var(--panel);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green-dim),var(--green));width:0%;transition:width .3s}
+  .pct{font-family:var(--mono);font-size:13px;color:var(--green);min-width:42px;text-align:right}
+  .reset{background:none;border:1px solid var(--line);color:var(--ink-dim);border-radius:7px;
+    padding:6px 11px;font-size:12px;cursor:pointer}
+  .reset:hover{color:var(--amber);border-color:var(--amber)}
+
+  .phase{margin-bottom:14px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:linear-gradient(165deg,var(--panel),var(--panel2))}
+  .phead{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer;user-select:none}
+  .phead .pn{font-family:var(--mono);font-size:12px;color:var(--violet);background:rgba(157,140,255,.1);
+    border:1px solid rgba(157,140,255,.2);border-radius:6px;padding:2px 8px}
+  .phead h2{font-size:15px;font-weight:600;flex:1}
+  .phead .cnt{font-family:var(--mono);font-size:12px;color:var(--ink-mute)}
+  .phead .chev{transition:transform .2s;color:var(--ink-mute)}
+  .phase.open .chev{transform:rotate(90deg)}
+  .pbody{display:none;padding:4px 18px 14px}
+  .phase.open .pbody{display:block}
+  .phase.done .phead{background:rgba(94,227,161,.04)}
+  .phase.done .pn{color:var(--green);background:rgba(94,227,161,.1);border-color:var(--green-dim)}
+
+  .step{display:flex;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+  .step:first-child{border-top:none}
+  .step input{appearance:none;width:20px;height:20px;flex:none;margin-top:1px;border:1.5px solid var(--line2);
+    border-radius:6px;cursor:pointer;position:relative;background:var(--panel2);transition:.15s}
+  .step input:checked{background:var(--green-dim);border-color:var(--green)}
+  .step input:checked::after{content:'';position:absolute;left:6px;top:2px;width:5px;height:10px;
+    border:solid var(--green);border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .step .body{flex:1}
+  .step .t{font-size:14px;line-height:1.45}
+  .step.checked .t{color:var(--ink-mute);text-decoration:line-through}
+  .step .c{margin-top:7px;font-family:var(--mono);font-size:12px;background:#0a0f17;border:1px solid var(--line);
+    border-radius:8px;padding:9px 11px;color:#cfe6da;white-space:pre-wrap;overflow-x:auto;position:relative}
+  .step .c .cp{position:absolute;top:6px;right:6px;background:var(--panel);border:1px solid var(--line);
+    color:var(--ink-dim);border-radius:5px;padding:3px 7px;font-size:10px;cursor:pointer;font-family:var(--sans)}
+  .step .c .cp:hover{color:var(--green);border-color:var(--green-dim)}
+  .step .note{margin-top:6px;font-size:12px;color:var(--amber);line-height:1.45}
+  .step .note b{color:var(--amber)}
+  .tag{font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:5px;margin-left:7px;vertical-align:1px}
+  .tag.both{background:rgba(108,182,255,.12);color:var(--blue)}
+  .tag.air{background:rgba(94,227,161,.12);color:var(--green)}
+  .tag.non{background:rgba(242,179,94,.12);color:var(--amber)}
+  footer{margin-top:30px;color:var(--ink-mute);font-family:var(--mono);font-size:11px;
+    border-top:1px solid var(--line);padding-top:14px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--green-dim);
+    color:#04140d;padding:9px 16px;border-radius:9px;font-size:13px;font-weight:600;opacity:0;transition:.25s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="./index.html">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    Back to lab portal
+  </a>
+  <header><span class="n">//</span><h1>NKP Deploy — Step-by-Step</h1><span class="line"></span></header>
+  <p class="sub">Follow top to bottom. Check off each step as you go — progress is saved in your browser. Pick your install mode; steps tagged for the other mode are hidden.</p>
+
+  <div class="modes">
+    <button id="m-air" aria-pressed="true" onclick="setMode('air')">Air-gapped<span class="d">offline · images mirrored to Harbor</span></button>
+    <button id="m-non" aria-pressed="false" onclick="setMode('non')">Non air-gapped<span class="d">cluster has outbound to the mirror</span></button>
+  </div>
+
+  <div class="progress">
+    <div class="bar"><i id="fill"></i></div>
+    <span class="pct" id="pct">0%</span>
+    <button class="reset" onclick="resetAll()">reset</button>
+  </div>
+
+  <div id="phases"></div>
+
+  <footer>// emeagso2026 · NKP 2.17 deploy runbook · progress stored locally in this browser</footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// mode: 'air' | 'non' ; each step tagged 'both' | 'air' | 'non'
+const PHASES = [
+ { n:'00', title:'Prerequisites', steps:[
+   {m:'both', t:'Bastion reachable, has the nkp CLI, and Docker installed', c:'nkp version\ndocker ps'},
+   {m:'both', t:'Bastion docker0 MTU = 1442 (Flow VPC overlay — kind hangs otherwise)', c:'ip link show docker0 | grep -o "mtu [0-9]*"\n# if 1500: set "mtu":1442 in /etc/docker/daemon.json, then: sudo systemctl restart docker'},
+   {m:'both', t:'DNS resolves the registry, Prism Central, and the planned dashboard FQDN', c:'getent hosts registry.emeagso2026.local pc-anna.emeagso2026.local'},
+   {m:'both', t:'Bastion trusts the internal CA (root + issuing) in its OS store', c:'sudo cp ca-chain.crt /etc/pki/ca-trust/source/anchors/emeagso2026-ca.crt\nsudo update-ca-trust extract'},
+   {m:'both', t:'IP plan: API VIP, node range, and MetalLB LB range do NOT overlap', note:'The LB range must be clear of node IPs and the API VIP, and excluded from DHCP. This is what caused the ingress crashloop — get it right up front.'},
+ ]},
+ { n:'01', title:'Stage the sources', steps:[
+   {m:'both', t:'Download the NKP bundles to the registry (use the Downloader page or scp)', c:'# portal -> Downloader, or:\n# air-gap bundle + CLI + (optional) nkp-bundle into /data/nkp-sources/nkp-v<ver>/'},
+   {m:'both', t:'Extract the air-gap bundle so container-images/ and the bootstrap image exist', c:'cd /data/nkp-sources\ntar xzf nkp-air-gapped-bundle_v2.17.1_linux_amd64.tar.gz'},
+   {m:'both', t:'Bundles visible on the bastion via the NFS mount', c:'ls -la /mnt/nkp-sources/nkp-v2.17.1/container-images/'},
+ ]},
+ { n:'02', title:'Push images to Harbor', steps:[
+   {m:'both', t:'Push the konvoy image bundle (uncompressed .tar) to the version project', c:'nkp push bundle --bundle /mnt/nkp-sources/nkp-v2.17.1/container-images/konvoy-image-bundle-v2.17.1.tar \\\n  --to-registry registry.emeagso2026.local/nkp-2-17-1 \\\n  --to-registry-username admin --to-registry-password Harbor12345 \\\n  --to-registry-ca-cert-file /mnt/nkp-sources/certs/ca-chain.crt'},
+   {m:'both', t:'Push the kommander image bundle (REQUIRED for Pro/Ultimate)', c:'nkp push bundle --bundle /mnt/nkp-sources/nkp-v2.17.1/container-images/kommander-image-bundle-v2.17.1.tar \\\n  --to-registry registry.emeagso2026.local/nkp-2-17-1 \\\n  --to-registry-username admin --to-registry-password Harbor12345 \\\n  --to-registry-ca-cert-file /mnt/nkp-sources/certs/ca-chain.crt'},
+   {m:'both', t:'Confirm images landed in the project (Harbor UI → nkp-2-17-1)', c:'curl -fsSk -u admin:Harbor12345 "https://registry.emeagso2026.local/api/v2.0/projects/nkp-2-17-1/repositories?page_size=5"'},
+ ]},
+ { n:'03', title:'Certificates', steps:[
+   {m:'both', t:'CA chain (SUBCA + ROOT) verifies Prism Central — must print 0 (ok)', c:'openssl s_client -connect pc-anna.emeagso2026.local:9440 -CAfile certs/pc-ca.crt </dev/null 2>/dev/null | grep "Verify return code"'},
+   {m:'both', t:'Ingress cert SAN covers the dashboard FQDN + key matches', c:'openssl x509 -in certs/nkp-ingress.crt -noout -ext subjectAltName\nopenssl x509 -noout -modulus -in certs/nkp-ingress.crt | openssl md5\nopenssl rsa  -noout -modulus -in certs/nkp-ingress.key | openssl md5'},
+   {m:'both', t:'SSH keypair exists (you hold the private key for node access)', c:'ssh-keygen -t ed25519 -f ~/nkp-prod -N "" -C "nkp-nodes"'},
+ ]},
+ { n:'04', title:'Bootstrap', steps:[
+   {m:'both', t:'Load the bootstrap (kind) image into local Docker', c:'docker load -i /mnt/nkp-sources/nkp-v2.17.1/konvoy-bootstrap-image-v2.17.1.tar'},
+   {m:'both', t:'Run the deploy from a WRITABLE dir (~), not the read-only NFS mount', note:'nkp writes the bootstrap config, lock file, and kubeconfig to the current dir. Running from /mnt/nkp-sources fails with "permission denied".'},
+ ]},
+ { n:'05', title:'Create the cluster', steps:[
+   {m:'air', t:'Air-gap create: mirror + bootstrap image + PC trust bundle', tag:'air', c:'nkp create cluster nutanix --cluster-name nkp-prod \\\n  --endpoint https://pc-anna.emeagso2026.local:9440 \\\n  --additional-trust-bundle "$(base64 -w0 certs/pc-ca.crt)" \\\n  --registry-mirror-url https://registry.emeagso2026.local/nkp-2-17-1 \\\n  --registry-mirror-cacert certs/ca-chain.crt \\\n  --bootstrap-cluster-image /mnt/nkp-sources/nkp-v2.17.1/konvoy-bootstrap-image-v2.17.1.tar \\\n  --airgapped --self-managed --wait  # (+ topology/sizing flags)'},
+   {m:'non', t:'Non air-gap create: same, but cluster can also reach the mirror online', tag:'non', c:'nkp create cluster nutanix --cluster-name nkp-prod \\\n  --endpoint https://pc-anna.emeagso2026.local:9440 \\\n  --additional-trust-bundle "$(base64 -w0 certs/pc-ca.crt)" \\\n  --registry-mirror-url https://registry.emeagso2026.local/nkp-2-17-1 \\\n  --registry-mirror-cacert certs/ca-chain.crt \\\n  --self-managed --wait  # no --airgapped; mirror still used as pull-through'},
+   {m:'both', t:'If the NutanixCredentials preflight fails on x509 but your CA verifies, install the CA into the OS store (the preflight uses the system trust), then re-run', c:'sudo cp certs/pc-ca.crt /etc/pki/ca-trust/source/anchors/emeagso2026-pc-ca.crt\nsudo update-ca-trust extract'},
+   {m:'both', t:'Watch the control-plane + worker VMs appear in Prism Central (project admins)', c:'export KUBECONFIG=~/nkp-prod.conf\nkubectl get nodes -o wide'},
+ ]},
+ { n:'06', title:'Dashboard & DNS', steps:[
+   {m:'both', t:'Find the Traefik LoadBalancer IP (from the MetalLB range)', c:'export KUBECONFIG=~/nkp-prod.conf\nkubectl get svc -n kommander kommander-traefik -o jsonpath="{.status.loadBalancer.ingress[0].ip}"; echo'},
+   {m:'both', t:'Point the dashboard FQDN at the Traefik LB IP (NOT the API VIP)', note:'The dashboard hostname must resolve to the ingress LB IP. If it points at the API VIP, dex / traefik-forward-auth crashloop with connection refused.'},
+   {m:'both', t:'Restart the auth apps if they crashlooped before DNS was set', c:'kubectl rollout restart -n kommander deploy/dex-k8s-authenticator deploy/traefik-forward-auth-mgmt'},
+   {m:'both', t:'Get the dashboard URL + credentials', c:'nkp get dashboard --kubeconfig ~/nkp-prod.conf'},
+ ]},
+ { n:'07', title:'Post-install', steps:[
+   {m:'both', t:'All nodes Ready, all kommander pods Running (14/14 core apps)', c:'kubectl get nodes\nkubectl get pods -n kommander | grep -v Running || echo "all running"'},
+   {m:'both', t:'Apply the NKP license (Starter → Pro/Ultimate) if upgrading tier', note:'Ultimate auto-deploys AI Navigator + Centralized Grafana — pre-size workers for the extra load.'},
+   {m:'both', t:'Back up cluster state (Velero) once healthy', c:'kubectl get pods -n velero 2>/dev/null || echo "velero not yet deployed"'},
+ ]},
+];
+
+let mode = 'air';
+const KEY = 'nkp-checklist-v1';
+let done = {};
+try { done = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch(e){ done = {}; }
+
+function stepId(pi, si){ return PHASES[pi].n + '-' + si; }
+function visible(step){ return step.m === 'both' || step.m === mode; }
+
+function render(){
+  const root = document.getElementById('phases');
+  root.innerHTML = '';
+  let total = 0, checked = 0;
+  PHASES.forEach((ph, pi) => {
+    const steps = ph.steps.filter(visible);
+    if (!steps.length) return;
+    const phEl = document.createElement('div');
+    phEl.className = 'phase';
+    let phDone = 0;
+    const stepsHtml = steps.map((st) => {
+      const si = ph.steps.indexOf(st);
+      const id = stepId(pi, si);
+      const isC = !!done[id];
+      total++; if (isC){ checked++; phDone++; }
+      const tag = st.tag ? `<span class="tag ${st.tag}">${st.tag==='air'?'air-gap':'non-airgap'}</span>` : '';
+      const code = st.c ? `<div class="c"><button class="cp" data-c="${encodeURIComponent(st.c)}">copy</button>${st.c.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</div>` : '';
+      const note = st.note ? `<div class="note">⚠ ${st.note}</div>` : '';
+      return `<label class="step ${isC?'checked':''}">
+        <input type="checkbox" data-id="${id}" ${isC?'checked':''}>
+        <span class="body"><span class="t">${st.t}${tag}</span>${code}${note}</span>
+      </label>`;
+    }).join('');
+    const allDone = phDone === steps.length;
+    if (allDone) phEl.classList.add('done');
+    if (!allDone) phEl.classList.add('open');   // auto-open incomplete phases
+    phEl.innerHTML = `
+      <div class="phead">
+        <span class="pn">${ph.n}</span><h2>${ph.title}</h2>
+        <span class="cnt">${phDone}/${steps.length}</span>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </div>
+      <div class="pbody">${stepsHtml}</div>`;
+    phEl.querySelector('.phead').addEventListener('click', () => phEl.classList.toggle('open'));
+    root.appendChild(phEl);
+  });
+  // wire checkboxes
+  root.querySelectorAll('input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      done[cb.dataset.id] = cb.checked;
+      localStorage.setItem(KEY, JSON.stringify(done));
+      render();
+    });
+  });
+  // wire copy buttons
+  root.querySelectorAll('.cp').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      navigator.clipboard.writeText(decodeURIComponent(b.dataset.c)).then(()=>toast('copied'));
+    });
+  });
+  const pct = total ? Math.round(checked/total*100) : 0;
+  document.getElementById('fill').style.width = pct + '%';
+  document.getElementById('pct').textContent = pct + '%';
+}
+
+function setMode(m){
+  mode = m;
+  document.getElementById('m-air').setAttribute('aria-pressed', m==='air');
+  document.getElementById('m-non').setAttribute('aria-pressed', m==='non');
+  render();
+}
+function resetAll(){
+  if (!confirm('Clear all checked steps?')) return;
+  done = {}; localStorage.removeItem(KEY); render(); toast('progress reset');
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1400);
+}
+render();
+</script>
+</body>
+</html>
