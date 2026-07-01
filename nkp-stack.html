@@ -27,7 +27,7 @@
 
   .stage{display:flex;gap:26px;align-items:flex-start;flex-wrap:wrap}
   .map{flex:1 1 460px;min-width:340px}
-  svg{width:100%;height:auto;display:block}
+  #radial{width:100%;height:auto;display:block}
 
   /* radial nodes */
   .branch{cursor:pointer}
@@ -57,7 +57,7 @@
   .tool .tname{font-weight:600;font-size:14px}
   .tool .tdesc{font-size:12px;color:var(--ink-dim)}
   .tool .col{display:flex;flex-direction:column;gap:1px}
-  .tool .arrow{margin-left:auto;color:var(--ink-mute);transition:.14s}
+  .tool .arrow{margin-left:auto;color:var(--ink-mute);transition:.14s;width:14px!important;height:14px!important;flex:none}
   .tool:hover .arrow{color:var(--green);transform:translateX(2px)}
   .tool .tag{font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:5px;
     background:rgba(108,182,255,.1);color:var(--blue);border:1px solid rgba(108,182,255,.18)}
@@ -78,12 +78,12 @@
     <div class="map">
       <svg viewBox="0 0 520 520" id="radial" aria-label="Radial map of NKP stack categories">
         <!-- spokes (drawn first, under nodes) -->
-        <g id="spokes" stroke-width="1.5" fill="none"></g>
+        <g id="spokes" stroke-width="0.75" fill="none"></g>
         <!-- center -->
         <g class="center">
           <circle cx="260" cy="260" r="50" fill="#0e141d" stroke="#2f7d59" stroke-width="1.5"/>
           <text x="260" y="254" text-anchor="middle" fill="#5ee3a1" font-size="19" font-weight="700">NKP</text>
-          <text x="260" y="274" text-anchor="middle" fill="#8b98a9" font-size="11">2.17 stack</text>
+          <text x="260" y="274" text-anchor="middle" fill="#8b98a9" font-size="11">stack</text>
         </g>
         <!-- category branches injected by JS -->
         <g id="branches"></g>
@@ -105,7 +105,7 @@
   </a>
 
   <footer>
-    <span>// emeagso2026 · NKP 2.17 stack reference</span>
+    <span>// emeagso2026 · NKP stack reference</span>
     <span>23 components · 6 categories</span>
   </footer>
 </div>
@@ -156,7 +156,7 @@ const CATS = [
   { id:'os', label:'Operating systems', sub:'node images', color:'#5ee3a1', angle:210,
     desc:'Base OS images for control-plane and worker nodes.',
     tools:[
-      {name:'Rocky Linux', desc:'Default node image (NKP 2.12+)', tag:'OS', url:'https://docs.rockylinux.org/'},
+      {name:'Rocky Linux', desc:'Default node image', tag:'OS', url:'https://docs.rockylinux.org/'},
       {name:'Ubuntu', desc:'Alternative node image', tag:'OS', url:'https://documentation.ubuntu.com/'},
     ]},
 ];
@@ -178,7 +178,7 @@ CATS.forEach(cat=>{
   const ln=document.createElementNS(NS,'line');
   ln.setAttribute('x1',edge.x); ln.setAttribute('y1',edge.y);
   ln.setAttribute('x2',hub.x);  ln.setAttribute('y2',hub.y);
-  ln.setAttribute('stroke',cat.color); ln.setAttribute('opacity','.35');
+  ln.setAttribute('stroke',cat.color); ln.setAttribute('opacity','.25');
   ln.setAttribute('class','spoke'); ln.dataset.cat=cat.id;
   spokes.appendChild(ln);
 
@@ -229,7 +229,7 @@ function select(id){
   document.querySelectorAll('.spoke').forEach(s=>{
     const on=s.dataset.cat===id;
     s.setAttribute('opacity',on?'.9':'.18');
-    s.setAttribute('stroke-width',on?'2.5':'1.5');
+    s.setAttribute('stroke-width',on?'1.25':'0.75');
   });
   // build panel
   empty.style.display='none'; content.style.display='block';
@@ -242,7 +242,7 @@ function select(id){
       +'<div class="col"><span class="tname">'+t.name+'</span>'
       +'<span class="tdesc">'+t.desc+'</span></div>'
       +'<span class="tag">'+t.tag+'</span>'
-      +'<svg class="arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>'
+      +'<svg class="arrow" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>'
       +'</a>';
   });
   content.innerHTML=html;
